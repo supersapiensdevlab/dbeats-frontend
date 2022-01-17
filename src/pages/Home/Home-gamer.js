@@ -7,11 +7,13 @@ import logo from '../..//assets/images/logo.svg';
 import animationData from '../../lotties/gamers.json';
 import ResponsiveCarousel from './Cards/HomeSlider';
 import LiveCard from './Cards/LiveCard';
-import PlayBackCard from './Cards/PlayBackCard';
+import PlayBackCardGamer from './Cards/PlayBackCard-gamer';
 // import {Helmet} from "react-helmet";
 import { Link } from 'react-router-dom';
 import Dropdown from '../../component/dropdown.component';
 import FeedbackForm from '../../component/form/feedbackForm';
+import MainToolbar from '../../component/Toolbar/main-toolbar';
+
 import { ReactComponent as Verified } from '../../assets/icons/verified-account.svg';
 
 const Home = () => {
@@ -201,7 +203,7 @@ const Home = () => {
             {/* {classes.other_videos} */}
             <div className="pt-18 flex flex-col justify-between col-span-6  lg:col-span-5 h-full   bg-dbeats-white   dark:bg-dbeats-dark-secondary">
               <div>
-                <div id="display_videos" className="lg:my-5 lg:px-4 h-max hidden">
+                <div id="display_videos" className="lg:my-5 lg:px-4 h-max  ">
                   <div className=" lg:px-4 h-max">
                     {slides.length > 2 ? (
                       <div className=" ">
@@ -211,7 +213,7 @@ const Home = () => {
                   </div>
                 </div>
                 <div className=" 2xl:px-4 ">
-                  <div id="display_playback_videos" className=" 2xl:px-4 px-1 hidden">
+                  <div id="display_playback_videos" className=" 2xl:px-4 px-1  ">
                     <div>
                       <h4 className=" font-bold  2xl:pb-4 lg:pb-2">
                         {activeStreams ? (
@@ -250,6 +252,7 @@ const Home = () => {
                       </h4>
                     </div>
                   </div>
+                  {user ? <MainToolbar></MainToolbar> : ''}
                   <div id="display_playback_videos" className="2xl:px-4 lg:px-3 px-1">
                     <div className="  ">
                       <div className="flex my-1">
@@ -259,29 +262,32 @@ const Home = () => {
                           setSelected={setSelectedCategory}
                           getSelected={selectedCategory}
                         />
-                        <h4 className=" font-bold   dark:text-gray-200 text-gray-900 p-2 cursor-pointer">
+                        <h4 className="  sm:text-sm lg:text-xs 2xl:text-sm self-center   dark:text-gray-200 text-gray-900 p-2 cursor-pointer dark:hover:bg-dbeats-dark-primary rounded mx-1 ">
                           All
                         </h4>
-                        <h4 className=" font-bold   dark:text-gray-200 text-gray-900 p-2 cursor-pointer">
+                        <h4 className="  sm:text-sm lg:text-xs 2xl:text-sm self-center   dark:text-gray-200 text-gray-900 p-2 cursor-pointer dark:hover:bg-dbeats-dark-primary rounded mx-1">
                           Videos
                         </h4>
-                        <h4 className=" font-bold   dark:text-gray-200 text-gray-900 p-2 cursor-pointer">
+                        <h4 className="  sm:text-sm lg:text-xs 2xl:text-sm self-center   dark:text-gray-200 text-gray-900 p-2 cursor-pointer dark:hover:bg-dbeats-dark-primary rounded mx-1">
                           Music
                         </h4>
-                        <h4 className=" font-bold   dark:text-gray-200 text-gray-900 p-2 cursor-pointer">
+                        <h4 className="   sm:text-sm lg:text-xs 2xl:text-sm self-center  dark:text-gray-200 text-gray-900 p-2 cursor-pointer dark:hover:bg-dbeats-dark-primary rounded mx-1">
                           Pictures
                         </h4>
                       </div>
                       <FeedbackForm />
-                      <div className="">
+                      <Carousel cols={4}>
                         {arrayData.map((playbackUser, i) => {
                           return (
-                            <div key={i}>
-                              <PlayBackCard darkMode={darkMode} playbackUserData={playbackUser} />
-                            </div>
+                            <Carousel.Item key={i}>
+                              <PlayBackCardGamer
+                                darkMode={darkMode}
+                                playbackUserData={playbackUser}
+                              />
+                            </Carousel.Item>
                           );
                         })}
-                      </div>
+                      </Carousel>
                     </div>
                   </div>
                 </div>

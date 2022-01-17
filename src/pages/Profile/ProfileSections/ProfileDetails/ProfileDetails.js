@@ -6,11 +6,14 @@ import { Route, Switch, useHistory } from 'react-router';
 import { Link } from 'react-router-dom';
 import person from '../../../../assets/images/profile.svg';
 import background from '../../../../assets/images/wallpaper.jpg';
+import { ReactComponent as Verified } from '../../../../assets/icons/verified-account.svg';
 import {
   UploadCoverImageModal,
   UploadProfileImageModal,
 } from '../../../../component/Modals/ImageUploadModal/ImageUploadModal';
 import ProfileUpdateModal from '../../../../component/Modals/ProfileUpdate/ProfileUpdate';
+import ProfileSettingsModal from '../../../../component/Modals/ProfileUpdate/ProfileSettingsModal';
+
 import AnnouncementCard from '../../Cards/AnnouncementCard';
 import CarouselCard from '../../Cards/CarouselCard';
 import PlaylistCard from '../../Cards/PlaylistCard';
@@ -26,12 +29,17 @@ const ProfileDetails = ({ setSharable_data, tabname, urlUsername, user, setShow,
   const [privateUser, setPrivate] = useState(true);
   const [loader, setLoader] = useState(true);
   const [isMailVerified, setIsMailVerified] = useState(false);
+  const [isVerified, setIsVerified] = useState(false);
   const [subscribeLoader, setSubscribeLoader] = useState(true);
 
   const handleShow = () => setShow(true);
   const [showUpdate, setShowUpdate] = useState(false);
   const handleShowUpdate = () => setShowUpdate(true);
   const handleCloseUpdate = () => setShowUpdate(false);
+
+  const [showSettings, setshowSettings] = useState(false);
+  const handleshowSettings = () => setshowSettings(true);
+  const handleCloseSettings = () => setshowSettings(false);
 
   const navigate = useHistory();
 
@@ -49,6 +57,7 @@ const ProfileDetails = ({ setSharable_data, tabname, urlUsername, user, setShow,
   const [postsData, setPostsData] = useState(null);
 
   const [buttonText, setButtonText] = useState('Subscribe');
+  const [displayName, setDisplayName] = useState(user.name);
 
   const myData = JSON.parse(window.localStorage.getItem('user'));
 
@@ -61,6 +70,7 @@ const ProfileDetails = ({ setSharable_data, tabname, urlUsername, user, setShow,
         setFollowers(value.follower_count.length);
         setFollowing(value.followee_count.length);
         setIsMailVerified(value.is_mail_verified);
+        setIsVerified(value.is_verified);
 
         if (value.pinned) {
           setPinnedData(value.pinned);
@@ -140,6 +150,7 @@ const ProfileDetails = ({ setSharable_data, tabname, urlUsername, user, setShow,
       setFollowers(value.data.follower_count.length);
       setFollowing(value.data.followee_count.length);
       setIsMailVerified(value.data.is_mail_verified);
+      setIsVerified(value.data.is_verified);
 
       if (value.data.cover_image && value.data.cover_image !== '') {
         setCoverImage(value.data.cover_image);
@@ -282,7 +293,7 @@ const ProfileDetails = ({ setSharable_data, tabname, urlUsername, user, setShow,
       });
   };
 
-  const NavTabs = ['Posts', 'Videos', 'Music', 'Activity', 'Playlists']; //, 'Subscribed Channels'
+  const NavTabs = ['Posts', 'Videos', 'Music', 'Playlists']; //, 'Subscribed Channels'
 
   const NavTabsTitle = ({ text }) => {
     if (text === 'Subscribed Channels') {
@@ -313,16 +324,16 @@ const ProfileDetails = ({ setSharable_data, tabname, urlUsername, user, setShow,
   return (
     <div className={`${darkMode && 'dark'}   h-max lg:col-span-5 col-span-6 w-full   `}>
       <div id="display_details" className="h-full 2xl:pt-16 lg:pt-12">
-        {!isMailVerified ? (
+        {!isMailVerified && privateUser ? (
           <div
-            class="bg-red-100 border-t-4 border-red-500 rounded-b text-red-900 px-4 py-2 shadow-md"
+            className="bg-red-100 border-t-4 border-red-500 rounded-b text-red-900 px-4 py-2 shadow-md"
             role="alert"
           >
-            <div class="flex items-center justify-between px-4">
+            <div className="flex items-center justify-between px-4">
               <div className="flex items-center">
-                <div class="py-1">
+                <div className="py-1">
                   <svg
-                    class="fill-current h-6 w-6 text-red-500 mr-4"
+                    className="fill-current h-6 w-6 text-red-500 mr-4"
                     xmlns="http://www.w3.org/2000/svg"
                     viewBox="0 0 20 20"
                   >
@@ -330,7 +341,7 @@ const ProfileDetails = ({ setSharable_data, tabname, urlUsername, user, setShow,
                   </svg>
                 </div>
                 <div>
-                  <p class="font-bold">Please verify your Email</p>
+                  <p className="font-bold">Please verify your Email</p>
                 </div>
               </div>
               <div
@@ -366,8 +377,8 @@ const ProfileDetails = ({ setSharable_data, tabname, urlUsername, user, setShow,
                 <div className="  flex flex-col lg:flex-row justify-between   md:mt-20  mt-40  sm:-mt-24 text-gray-400   dark:bg-dbeats-dark-primary bg-white dark:backdrop-filter dark:backdrop-blur dark:bg-opacity-80  backdrop-filter  backdrop-blur  bg-opacity-90">
                   <div className="dark:text-white  text-dbeats-dark-alt 2xl:py-4 lg:py-2.5    md:py-3 lg:mx-0 px-10 lg:px-10 md:px-4 ">
                     <div className="flex w-max lg:pt-0 items-center ">
-                      <span className="font-bold 2xl:text-3xl lg:text-xl md:text-xl mr-3 font-GTWalsheimPro">
-                        {user.name}
+                      <span className="font-bold 2xl:text-xl lg:text-xl md:text-xl mr-3 font-GTWalsheimPro">
+                        {displayName}
                       </span>
                       {myData && !privateUser ? (
                         <button
@@ -409,10 +420,27 @@ const ProfileDetails = ({ setSharable_data, tabname, urlUsername, user, setShow,
                           <i className="fas fa-pen self-center mr-2 "></i> Edit
                         </button>
                       ) : null}
+                      {privateUser ? (
+                        <button
+                          onClick={handleshowSettings}
+                          className="no-underline border text-dbeats-dark-alt 
+                        cursor-pointer dark:border-white border-1 dark:border-opacity-20  dark:text-gray-200 
+                        hover:bg-dbeats-light hover:text-white 
+                        dark:hover:text-white rounded font-bold mr-1 
+                        flex self-center   py-1 2xl:px-3 lg:px-1.5  text-xs 2xl:text-lg  px-2"
+                        >
+                          <i className="fas fa-cog  self-center mr-2"></i> Settings
+                        </button>
+                      ) : null}
                     </div>
-                    <span className="font-semibold 2xl:text-lg lg:text-sm opacity-60">
-                      @{user.username}
-                    </span>
+                    <div className="flex items-center">
+                      <span className="font-semibold 2xl:text-lg lg:text-sm opacity-60">
+                        @{user.username}
+                      </span>
+                      {isVerified ? (
+                        <Verified className="h-5 w-5  items-center self-center justify-center text-dbeats-light mx-1" />
+                      ) : null}
+                    </div>
                   </div>
 
                   <div className="2xl::w-56 lg:w-44 w-full flex justify-center z-1 -mt-48  md:-mt-36 lg:-mt-20 2xl:-mt-24 mb-24 md:mb-8 2xl:mb-0 xl:mb-0 lg:mb-0  sm:-mt-24">
@@ -721,6 +749,14 @@ const ProfileDetails = ({ setSharable_data, tabname, urlUsername, user, setShow,
         handleClose={handleCloseUpdate}
         userData={user}
         darkMode={darkMode}
+        setDisplayName={setDisplayName}
+      />
+      <ProfileSettingsModal
+        show={showSettings}
+        handleClose={handleCloseSettings}
+        userData={user}
+        darkMode={darkMode}
+        setDisplayName={setDisplayName}
       />
     </div>
   );
