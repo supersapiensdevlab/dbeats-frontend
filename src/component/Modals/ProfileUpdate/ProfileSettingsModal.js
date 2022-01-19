@@ -1,24 +1,28 @@
 import axios from 'axios';
 import React, { useState } from 'react';
 import Modal from 'react-modal';
+import { Image } from 'react-img-placeholder';
+import dbeatsLogoBnW from '../../../assets/images/Logo/logo-blacknwhite.png';
+import maticLogo from '../../../assets/graphics/polygon-matic-logo.svg';
+import { useEffect } from 'react';
 
 const ProfileUpdateModal = ({ show, handleClose, userData, darkMode, setDisplayName }) => {
   // const [buttonText, setButtonText] = useState('Click Here');
   const [loader, setLoader] = useState(false);
 
   const [newData, setNewData] = useState({
-    plan: userData.superfan_data.plan,
-    perks: userData.superfan_data.perks,
-    price: userData.superfan_data.price,
-    plan2: userData.superfan_data.plan2,
-    perks2: userData.superfan_data.perks2,
-    price2: userData.superfan_data.price2,
-    plan3: userData.superfan_data.plan3,
-    perks3: userData.superfan_data.perks3,
-    price3: userData.superfan_data.price3,
+    plan: '',
+    perks: '',
+    price: '',
+    plan2: '',
+    perks2: '',
+    price2: '',
+    plan3: '',
+    perks3: '',
+    price3: '',
   });
 
-  console.log('userData', userData.superfan_data);
+  //console.log('userData', userData.superfan_data);
   const [currentPlan, setPlan] = useState('first');
 
   const handleNewPlan = (e) => {
@@ -49,6 +53,7 @@ const ProfileUpdateModal = ({ show, handleClose, userData, darkMode, setDisplayN
       username: userData.username,
       planData: newData,
     };
+    console.log(data);
     axios({
       method: 'POST',
       url: `${process.env.REACT_APP_SERVER_URL}/user/update-superfan`,
@@ -64,17 +69,33 @@ const ProfileUpdateModal = ({ show, handleClose, userData, darkMode, setDisplayN
       });
   };
 
+  useEffect(() => {
+    if (userData.superfan_data) {
+      setNewData({
+        plan: userData.superfan_data.plan,
+        perks: userData.superfan_data.perks,
+        price: userData.superfan_data.price,
+        plan2: userData.superfan_data.plan2,
+        perks2: userData.superfan_data.perks2,
+        price2: userData.superfan_data.price2,
+        plan3: userData.superfan_data.plan3,
+        perks3: userData.superfan_data.perks3,
+        price3: userData.superfan_data.price3,
+      });
+    }
+  }, [userData.superfan_data]);
+
   return (
     <Modal
       isOpen={show}
       className={
         darkMode
-          ? 'h-max max-h-screen lg:w-1/3 w-5/6 mx-auto 2xl:mt-28 lg:mt-16   bg-dbeats-dark-primary rounded-xl '
-          : 'h-max max-h-screen lg:w-1/3 w-5/6 mx-auto 2xl:mt-28 lg:mt-16    bg-gray-50 rounded-xl shadow-2xl'
+          ? 'h-max max-h-screen lg:w-1/3 w-5/6 mx-auto mt-20   bg-dbeats-dark-primary rounded-xl '
+          : 'h-max max-h-screen lg:w-1/3 w-5/6 mx-auto mt-20    bg-gray-50 rounded-xl shadow-2xl'
       }
     >
       <div className={`${darkMode && 'dark'} p-2 h-max`}>
-        <h2 className="grid grid-cols-5 justify-items-center 2xl:text-2xl text-lg 2xl:py-4 py-4 lg:py-3 dark:bg-dbeats-dark-alt bg-white dark:text-white">
+        <h2 className="grid grid-cols-5 justify-items-center 2xl:text-2xl text-lg 2xl:pt-4   dark:bg-dbeats-dark-alt bg-white dark:text-white">
           <div className="col-span-4 pl-14 uppercase font-semibold text-dbeats-light">Settings</div>
           <div className="mr-7 flex justify-end w-full" onClick={handleClose}>
             <i className="fas fa-times cursor-pointer"></i>
@@ -209,6 +230,7 @@ const ProfileUpdateModal = ({ show, handleClose, userData, darkMode, setDisplayN
                   <p className="text-center bg-dbeats-dark-alt self-center dark:text-gray-500">
                     Choose a card to edit
                   </p>
+
                   <div className="grid sm:grid-cols-3 grid-cols-1 gap-6 bg-gray-50 dark:bg-dbeats-dark-alt  align-middle justify-center row-auto p-3">
                     <form
                       name="first"
@@ -218,35 +240,65 @@ const ProfileUpdateModal = ({ show, handleClose, userData, darkMode, setDisplayN
                         currentPlan === 'first'
                           ? 'dark:border-dbeats-light  shadow-md '
                           : 'dark:border-dbeats-dark-primary border-dashed'
-                      }   border-2  border-gray-500 self-center dark:bg-dbeats-dark-secondary bg-white 
-                     h-48 rounded align-middle text-center cursor-pointer`}
+                      }   border   border-gray-500 self-center dark:bg-dbeats-dark-secondary bg-white 
+                     h-max rounded-md align-middle text-center cursor-pointer `}
                     >
                       {' '}
+                      <input
+                        className="form-check-input appearance-none rounded-full h-4 w-4 border
+                         border-gray-300 bg-white checked:bg-blue-600 checked:border-blue-600 
+                         focus:outline-none  transition m-2 duration-200   align-top bg-no-repeat bg-center bg-contain float-left mr-2 cursor-pointer"
+                        type="radio"
+                        checked={currentPlan === 'first'}
+                        name="first"
+                        onClick={handleNewPlan}
+                        id="flexRadioDefault1"
+                      ></input>{' '}
                       <p
                         className={`${
                           !newData.plan
                             ? 'animate-pulse dark:bg-dbeats-dark-primary bg-gray-200'
                             : ''
-                        }  align-middle font-bold uppercase text-lg mt-5 mx-2 rounded`}
+                        }  align-middle font-bold  dark:text-dbeats-light text-lg mt-5 mx-2 rounded`}
                       >
                         {newData.plan}&nbsp;
                       </p>
-                      <p
-                        className={`${
-                          !newData.price
-                            ? 'animate-pulse mt-5 dark:bg-dbeats-dark-primary bg-gray-200'
-                            : ''
-                        }  align-middle   text-lg  mx-2 rounded`}
+                      <Image
+                        src={dbeatsLogoBnW}
+                        height={80}
+                        width={80}
+                        className="object-cover  h-24 w-24 mx-auto rounded-full  mt-1"
+                        alt=""
+                        placeholderSrc={dbeatsLogoBnW}
+                      />
+                      <div className=" flex text-2xl font-bold mx-auto justify-center  text-center mt-3 mb-2">
+                        <>
+                          <img className="h-6 w-6 self-center mr-1" src={maticLogo}></img>
+                          <p
+                            className={`${
+                              !newData.price
+                                ? 'animate-pulse mt-5 dark:bg-dbeats-dark-primary bg-gray-200'
+                                : ''
+                            }  align-middle   text-lg  mx-2 rounded`}
+                          >
+                            {' '}
+                            {newData.price}&nbsp;
+                          </p>
+                        </>
+                      </div>
+                      <button
+                        className="rounded-full block shadow text-center col-span-1  bg-white dark:bg-dbeats-dark-primary text-black dark:text-white  
+                           2xl:w-max w-max px-5 lg:w-60  mx-auto py-2      font-semibold   border border-dbeats-light dark:border-dbeats-light dark:hover:border-dbeats-light  hover:border-dbeats-light hover:shadow-none 
+                           transition-all transform hover:scale-99 hover:bg-dbeats-light dark:hover:bg-dbeats-light hover:text-white "
                       >
-                        {' '}
-                        {newData.price}&nbsp;
-                      </p>
+                        <span className="font-semibold text-md px-4 ">Join</span>
+                      </button>
                       <p
                         className={`${
                           !newData.perks
                             ? 'animate-pulse mt-5 dark:bg-dbeats-dark-primary bg-gray-200'
                             : ''
-                        }  align-middle   text-lg  mx-2 rounded`}
+                        }      text-lg  m-2 rounded  text-gray-800 dark:text-gray-300 mt-4`}
                       >
                         {' '}
                         {newData.perks}&nbsp;
@@ -261,35 +313,65 @@ const ProfileUpdateModal = ({ show, handleClose, userData, darkMode, setDisplayN
                         currentPlan === 'second'
                           ? 'dark:border-dbeats-light  shadow-md '
                           : 'dark:border-dbeats-dark-primary border-dashed'
-                      }    border-2  border-gray-500 self-center dark:bg-dbeats-dark-secondary bg-white 
-                     h-48 rounded align-middle text-center cursor-pointer`}
+                      }   border   border-gray-500 self-center dark:bg-dbeats-dark-secondary bg-white 
+                     h-max rounded-md align-middle text-center cursor-pointer `}
                     >
-                      {' '}
+                      <input
+                        className="form-check-input appearance-none rounded-full h-4 w-4 border
+                         border-gray-300 bg-white checked:bg-blue-600 checked:border-blue-600 
+                         focus:outline-none transition m-2 duration-200   align-top bg-no-repeat bg-center bg-contain float-left mr-2 cursor-pointer"
+                        type="radio"
+                        checked={currentPlan === 'second'}
+                        id="flexRadioDefault2"
+                        name="second"
+                        onClick={handleNewPlan}
+                      ></input>
+
                       <p
                         className={`${
                           !newData.plan2
                             ? 'animate-pulse dark:bg-dbeats-dark-primary bg-gray-200'
                             : ''
-                        }  align-middle font-bold uppercase text-lg mt-5 mx-2 rounded`}
+                        }  align-middle font-bold  dark:text-dbeats-light text-lg mt-5 mx-2 rounded`}
                       >
                         {newData.plan2}&nbsp;
                       </p>
-                      <p
-                        className={`${
-                          !newData.price2
-                            ? 'animate-pulse mt-5 dark:bg-dbeats-dark-primary bg-gray-200'
-                            : ''
-                        }  align-middle   text-lg  mx-2 rounded`}
+                      <Image
+                        src={dbeatsLogoBnW}
+                        height={80}
+                        width={80}
+                        className="object-cover  h-24 w-24 mx-auto rounded-full  mt-1"
+                        alt=""
+                        placeholderSrc={dbeatsLogoBnW}
+                      />
+                      <div className=" flex text-2xl font-bold mx-auto justify-center  text-center mt-3 mb-2">
+                        <>
+                          <img className="h-6 w-6 self-center mr-1" src={maticLogo}></img>
+                          <p
+                            className={`${
+                              !newData.price2
+                                ? 'animate-pulse mt-5 dark:bg-dbeats-dark-primary bg-gray-200'
+                                : ''
+                            }  align-middle   text-lg  mx-2 rounded`}
+                          >
+                            {' '}
+                            {newData.price2}&nbsp;
+                          </p>
+                        </>
+                      </div>
+                      <button
+                        className="rounded-full block shadow text-center col-span-1  bg-white dark:bg-dbeats-dark-primary text-black dark:text-white  
+                           2xl:w-max w-max px-5 lg:w-60  mx-auto py-2      font-semibold   border border-dbeats-light dark:border-dbeats-light dark:hover:border-dbeats-light  hover:border-dbeats-light hover:shadow-none 
+                           transition-all transform hover:scale-99 hover:bg-dbeats-light dark:hover:bg-dbeats-light hover:text-white "
                       >
-                        {' '}
-                        {newData.price2}&nbsp;
-                      </p>
+                        <span className="font-semibold text-md px-4 ">Join</span>
+                      </button>
                       <p
                         className={`${
                           !newData.perks2
                             ? 'animate-pulse mt-5 dark:bg-dbeats-dark-primary bg-gray-200'
                             : ''
-                        }  align-middle   text-lg  mx-2 rounded`}
+                        }      text-lg  m-2 rounded  text-gray-800 dark:text-gray-300 mt-4`}
                       >
                         {' '}
                         {newData.perks2}&nbsp;
@@ -304,35 +386,65 @@ const ProfileUpdateModal = ({ show, handleClose, userData, darkMode, setDisplayN
                         currentPlan === 'third'
                           ? 'dark:border-dbeats-light  shadow-md '
                           : 'dark:border-dbeats-dark-primary border-dashed'
-                      }    border-2  border-gray-500 self-center dark:bg-dbeats-dark-secondary bg-white 
-                     h-48 rounded align-middle text-center cursor-pointer`}
+                      }   border   border-gray-500 self-center dark:bg-dbeats-dark-secondary bg-white 
+                     h-max rounded-md align-middle text-center cursor-pointer `}
                     >
                       {' '}
+                      <input
+                        className="form-check-input appearance-none rounded-full h-4 w-4 border
+                         border-gray-300 bg-white checked:bg-blue-600 checked:border-blue-600 
+                         focus:outline-none transition m-2 duration-200   align-top bg-no-repeat bg-center bg-contain float-left mr-2 cursor-pointer"
+                        type="radio"
+                        name="third"
+                        onClick={handleNewPlan}
+                        checked={currentPlan === 'third'}
+                        id="flexRadioDefault3"
+                      ></input>{' '}
                       <p
                         className={`${
                           !newData.plan3
                             ? 'animate-pulse dark:bg-dbeats-dark-primary bg-gray-200'
                             : ''
-                        }  align-middle font-bold uppercase text-lg mt-5 mx-2 rounded`}
+                        }  align-middle font-bold  dark:text-dbeats-light text-lg mt-5 mx-2 rounded`}
                       >
                         {newData.plan3}&nbsp;
                       </p>
-                      <p
-                        className={`${
-                          !newData.price3
-                            ? 'animate-pulse mt-5 dark:bg-dbeats-dark-primary bg-gray-200'
-                            : ''
-                        }  align-middle   text-lg  mx-2 rounded`}
+                      <Image
+                        src={dbeatsLogoBnW}
+                        height={80}
+                        width={80}
+                        className="object-cover  h-24 w-24 mx-auto rounded-full  mt-1"
+                        alt=""
+                        placeholderSrc={dbeatsLogoBnW}
+                      />
+                      <div className=" flex text-2xl font-bold mx-auto justify-center  text-center mt-3 mb-2">
+                        <>
+                          <img className="h-6 w-6 self-center mr-1" src={maticLogo}></img>
+                          <p
+                            className={`${
+                              !newData.price3
+                                ? 'animate-pulse mt-5 dark:bg-dbeats-dark-primary bg-gray-200'
+                                : ''
+                            }  align-middle   text-lg  mx-2 rounded`}
+                          >
+                            {' '}
+                            {newData.price3}&nbsp;
+                          </p>
+                        </>
+                      </div>
+                      <button
+                        className="rounded-full block shadow text-center col-span-1  bg-white dark:bg-dbeats-dark-primary text-black dark:text-white  
+                           2xl:w-max w-max px-5 lg:w-60  mx-auto py-2      font-semibold   border border-dbeats-light dark:border-dbeats-light dark:hover:border-dbeats-light  hover:border-dbeats-light hover:shadow-none 
+                           transition-all transform hover:scale-99 hover:bg-dbeats-light dark:hover:bg-dbeats-light hover:text-white "
                       >
-                        {' '}
-                        {newData.price3}&nbsp;
-                      </p>
+                        <span className="font-semibold text-md px-4 ">Join</span>
+                      </button>
                       <p
                         className={`${
                           !newData.perks3
                             ? 'animate-pulse mt-5 dark:bg-dbeats-dark-primary bg-gray-200'
                             : ''
-                        }  align-middle   text-lg  mx-2 rounded`}
+                        }      text-lg  m-2 rounded  text-gray-800 dark:text-gray-300 mt-4`}
                       >
                         {' '}
                         {newData.perks3}&nbsp;
