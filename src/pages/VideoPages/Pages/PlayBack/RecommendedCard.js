@@ -82,25 +82,22 @@ const RecommendedCard = (props) => {
           <Menu.Items className="absolute right-0 w-56 mt-2 origin-top-right bg-white divide-y divide-gray-100   shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
             <div className="px-1 py-1 ">
               <Menu.Item className="w-full text-gray-700 text-left text-lg pl-2 hover:text-white hover:bg-dbeats-light">
-                <button>Edit</button>
+                <button
+                  onClick={() => {
+                    props.handleShowPlaylist();
+                  }}
+                >
+                  Add to Playlist
+                </button>
               </Menu.Item>
-              <Menu.Item className="w-full text-gray-700 text-left text-lg pl-2 hover:text-white hover:bg-dbeats-light">
-                <button>Duplicate</button>
-              </Menu.Item>
+            
             </div>
-            <div className="px-1 py-1">
-              <Menu.Item className="w-full text-gray-700 text-left text-lg pl-2 hover:text-white hover:bg-dbeats-light">
-                <button>Archive</button>
-              </Menu.Item>
-              <Menu.Item className="w-full text-gray-700 text-left text-lg pl-2 hover:text-white hover:bg-dbeats-light">
-                <button>Move</button>
-              </Menu.Item>
-            </div>
-            <div className="px-1 py-1">
+
+            {/* <div className="px-1 py-1">
               <Menu.Item className="w-full text-gray-700 text-left text-lg pl-2 hover:text-white hover:bg-dbeats-light">
                 <button>Delete</button>
               </Menu.Item>
-            </div>
+            </div> */}
           </Menu.Items>
         </Transition>
       </Menu>
