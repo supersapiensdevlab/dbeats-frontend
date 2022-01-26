@@ -411,6 +411,30 @@ const PlayBackInfo = (props) => {
     return () => clearTimeout(timer);
   }, [buttonText]);
 
+  useEffect(() => {
+    //View Counter
+
+    if (user ? user.username !== props.video_username : false) {
+      const timer = setTimeout(() => {
+        const videoDetails = {
+          videousername: `${props.video_username}`,
+          videoindex: `${props.video_id}`,
+        };
+
+        axios({
+          method: 'POST',
+          url: `${process.env.REACT_APP_SERVER_URL}/user/views`,
+          headers: {
+            'content-type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+          },
+          data: videoDetails,
+        });
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [props.video_id]);
+
   ////console.log(arrayData);
 
   const testFlow = async (amount) => {
@@ -444,6 +468,7 @@ const PlayBackInfo = (props) => {
     //const details = await carol2.details();
     //console.log(details.cfa.flows.outFlows[0]);
   };
+
   return (
     <>
       {videoPresent ? (
@@ -480,6 +505,8 @@ const PlayBackInfo = (props) => {
                       ) : null}
                       {time ? (
                         <p className="  2xl:text-lg lg:text-xs text-md text-gray-400 pb-4">
+                          {userData.videos.views ? userData.videos.views : '0'} views{' '}
+                          <span className=" mx-1">&#183;</span>
                           {time}
                         </p>
                       ) : null}
@@ -598,9 +625,6 @@ const PlayBackInfo = (props) => {
                       >
                         <Menu.Items className="  dark:bg-opacity-10 backdrop-filter  backdrop-blur-md absolute right-0 w-56  origin-top-right bg-white dark:bg-dbeats-dark-primary dark:text-gray-50 divide-y divide-gray-100   shadow   focus:outline-none">
                           <div className="px-1 py-1 ">
-                            <Menu.Item className="w-full text-gray-700 dark:text-gray-50 text-left text-lg pl-2 hover:text-white hover:bg-dbeats-light">
-                              <button>Edit</button>
-                            </Menu.Item>
                             {user ? (
                               <Menu.Item className="w-full text-gray-700 dark:text-gray-50 text-left text-lg pl-2 hover:text-white hover:bg-dbeats-light">
                                 <button
@@ -642,7 +666,14 @@ const PlayBackInfo = (props) => {
             <div className="  w-full pb-32  pt-2 col-span-1 sm:px-5 px-3  bg-opacity-30 bg-white sm:dark:bg-dbeats-dark-secondary dark:bg-dbeats-dark-alt text-black  dark:text-white">
               <div className=" w-full  grid grid-cols-1 grid-flow-row gap-3  ">
                 {arrayData.map((value, index) => {
-                  return <RecommendedCard key={index} value={value} darkMode={darkMode} />;
+                  return (
+                    <RecommendedCard
+                      key={index}
+                      value={value}
+                      darkMode={darkMode}
+                      handleShowPlaylist={handleShowPlaylist}
+                    />
+                  );
                 })}
               </div>
             </div>
