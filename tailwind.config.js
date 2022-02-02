@@ -53,6 +53,10 @@ module.exports = {
       },
       maxHeight: {
         125: '43rem',
+        90: '90px',
+        110: '28rem',
+        120: '42rem',
+        screen: '95vh',
       },
       grayscale: { 50: '50%', 75: '75%' },
       width: {
@@ -116,5 +120,7 @@ module.exports = {
     require('tailwindcss-filters'),
     require('@themesberg/flowbite/plugin'),
     require('tailwindcss-important')(),
+
+    require('tailwindcss-neumorphism'),
   ],
 };

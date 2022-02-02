@@ -14,14 +14,14 @@ const FeedbackForm = () => {
       <Transition
         show={showWelcome}
         as={Fragment}
-        enter="transition ease-in-out duration-100"
+        enter="transition ease-in-out duration-500"
         enterFrom="transform opacity-0    "
-        enterTo="transform opacity-100    "
-        leave="transition ease-in-out duration-100"
-        leaveFrom="transform opacity-100   "
+        enterTo="transform opacity-500    "
+        leave="transition ease-in-out duration-500"
+        leaveFrom="transform opacity-500   "
         leaveTo="transform   opacity-0  "
       >
-        <div className="mb-4 border border-gray-100 dark:text-gray-50 dark:border-dbeats-light dark:border-opacity-10 bg-white dark:bg-dbeats-dark-primary lg:rounded md:rounded sm:rounded shadow-sm dark:shadow-md    text-dbeats-dark-primary p-4 rounded   md:w-1/2 dialog ">
+        <div className="mb-4 border border-gray-100 dark:text-gray-50 dark:border-dbeats-light dark:border-opacity-10 bg-white nm-flat-dbeats-dark-primary  rounded-xl shadow-sm dark:shadow-md    text-dbeats-dark-primary p-4    dialog ">
           {!showFeedback ? (
             <div>
               <div className="justify-between flex">
@@ -37,9 +37,11 @@ const FeedbackForm = () => {
                 onClick={() => {
                   handleShowFeedback();
                 }}
-                className="px-5 py-2 bg-dbeats-light  w-max rounded mt-4 text-white cursor-pointer hover:bg-dbeats-secondary-light"
+                className="  transform-gpu  transition-all duration-300 ease-in-out mt-3 cursor-pointer relative inline-flex items-center justify-center p-1 mb-2 mr-2 overflow-hidden text-sm font-medium text-gray-900 rounded-3xl  bg-gradient-to-br from-dbeats-dark-alt to-dbeats-dark-primary  nm-flat-dbeats-dark-primary   hover:nm-inset-dbeats-dark-primary   hover:text-white dark:text-white  "
               >
-                Leave your feedback
+                <span className="relative px-5 py-2.5   bg-gradient-to-br from-dbeats-light to-dbeats-secondary-light hover:nm-inset-dbeats-secondary-light  rounded-3xl">
+                  Leave your feedback
+                </span>
               </div>
             </div>
           ) : (

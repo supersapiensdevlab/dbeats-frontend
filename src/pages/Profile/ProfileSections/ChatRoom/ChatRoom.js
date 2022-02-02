@@ -1,51 +1,45 @@
-import Gun from 'gun';
 import React, { useEffect, useReducer, useRef, useState } from 'react';
 import './chatroom.css';
-
-//console.log('lslsls');
-// create the initial state to hold the messages
-const initialState = {
-  messages: [],
-};
-
-// Create a reducer that will update the messages array
-function reducer(state, message) {
-  return {
-    messages: [...state.messages, message],
-  };
-}
+import io from 'socket.io-client';
+import Picker from 'emoji-picker-react';
+import emoji from '../../../../assets/images/emoji.png';
+import reply from '../../../../assets/images/reply.svg';
+import person from '../../../../assets/images/profile.svg';
 
 function ChatRoom(props) {
   // to get loggedin user from   localstorage
   const user = JSON.parse(window.localStorage.getItem('user'));
-  const gun = Gun({
-    peers: [`${process.env.REACT_APP_SERVER_URL}/gun`],
-  });
 
   const chatRef = useRef(null);
   // the form state manages the form input for creating a new message
   const [formState, setForm] = useState({
     message: '',
+    replyto: null,
   });
+  const [messages, setMessages] = useState([]);
+  const [currentSocket, setCurrentSocket] = useState(null);
+  const dates = new Set();
 
-  // initialize the reducer & state for holding the messages array
-  const [state, dispatch] = useReducer(reducer, initialState);
+  const [showEmojis, setShowEmojis] = useState(false);
 
-  // when the app loads, fetch the current messages and load them into the state
-  // this also subscribes to new data as it changes and updates the local state
-
+  const onEmojiClick = (event, emojiObject) => {
+    setForm({ ...formState, message: formState.message + emojiObject.emoji });
+  };
   useEffect(() => {
     // initialize gun locally
     if (user) {
-      const messages = gun.get('messages').get(props.userp.username);
-      messages.map().once((m) => {
-        dispatch({
-          username: m.username,
-          message: m.message,
-          createdAt: m.createdAt,
-        });
+      // https://dbeats-chat.herokuapp.com/
+      const socket = io('https://dbeats-chat.herokuapp.com');
+      setCurrentSocket(socket);
+      socket.emit('joinroom', { user_id: user._id, room_id: props.userp._id });
+      socket.on('init', (msgs) => {
+        setMessages(msgs);
         chatRef.current.scrollIntoView({ behavior: 'smooth' });
-      }, true);
+      });
+      socket.on('message', (msg) => {
+        setMessages((prevArray) => [...prevArray, msg]);
+        chatRef.current.scrollIntoView({ behavior: 'smooth' });
+      });
     } else {
       window.history.replaceState({}, 'Home', '/');
     }
@@ -55,92 +49,199 @@ function ChatRoom(props) {
   // set a new message in gun, update the local state to reset the form field
   function saveMessage(e) {
     e.preventDefault();
-    const messages = gun.get('messages').get(props.userp.username);
-    messages.set({
-      username: user.username,
-      message: formState.message,
-      createdAt: Date.now(),
-    });
+    let room = {
+      room_admin: props.userp._id,
+      chat: {
+        user_id: user._id,
+        username: user.username,
+        profile_image: user.profile_image,
+        type: 'text',
+        message: formState.message,
+        createdAt: Date.now(),
+      },
+    };
+    if (formState.replyto) {
+      room.chat.reply_to = formState.replyto;
+    }
+    currentSocket.emit('chatMessage', room);
     setForm({
       message: '',
+      replyto: null,
     });
+    setShowEmojis(false);
   }
-
+  const renderDate = (chat, dateNum) => {
+    const timestampDate = new Date(chat.createdAt);
+    // Add to Set so it does not render again
+    const today = new Date(Date.now());
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    dates.add(dateNum);
+    if (timestampDate.toDateString() == today.toDateString()) {
+      return <p className="text-center text-sm">Today</p>;
+    } else if (timestampDate.toDateString() == yesterday.toDateString()) {
+      return <p className="text-center text-sm">Yesterday</p>;
+    }
+    return <p className="text-center text-sm">{timestampDate.toDateString()}</p>;
+  };
   // update the form state as the user types
   function onChange(e) {
     setForm({ ...formState, [e.target.name]: e.target.value });
   }
 
+  const onreply = (message) => {
+    setForm({ ...formState, replyto: message });
+  };
+
   return (
-    <div className="text-gray-400	 box-border px-5 h-max lg:col-span-5 col-span-6 w-full mt-16 dark:bg-dbeats-dark-primary">
+    <div className="text-gray-400	 box-border px-2 h-max lg:col-span-5 col-span-6 w-full mt-16 dark:bg-dbeats-dark-primary">
       <div className="overflow-hidden">
-        {/* <header className="chat-header">
-          <h1>
-            <i className="fas fa-smile" /> ChatCord
-          </h1>
-          <a onClick={() => (window.location.href = '/')} className="btn">
-            Leave Room
-          </a>
-        </header> */}
         <main className="chat-container-height">
-          {/* <div className="chat-sidebar">
-            <h3>
-              <i className="fas fa-comments" /> Room Name:
-            </h3>
-            <h2 id="room-name">{props.userp.username}</h2>
-          </div> */}
           <div className="p-2 chat-height overflow-y-scroll	">
-            {state.messages.map((message) => (
-              <div
-                className="px-6 p-2 flex items-center	rounded-xl dark: bg-dbeats-dark-secondary	mb-2"
-                key={message.createdAt}
-              >
-                <div className="chat_message_profile">
+            {messages
+              ? messages.map((message) => {
+                  const dateNum = new Date(message.createdAt);
+
+                  return (
+                    <div key={message._id}>
+                      {dates.has(dateNum.toDateString()) ? null : (
+                        <p className="my-1 rounded-3xl bg-dbeats-dark-secondary px-3 py-1 block w-max mx-auto">
+                          {renderDate(message, dateNum.toDateString())}
+                        </p>
+                      )}
+                      <div className=" px-3 p-2 rounded	 dark: bg-dbeats-dark-secondary	my-1 inline-block shadow">
+                        {message.reply_to ? (
+                          <div className="group  px-3 py-2 border-l-2 border-dbeats-light  dark: nm-inset-dbeats-dark-primary">
+                            <p
+                              className={
+                                message.reply_to.username === user.username
+                                  ? 'text-sm  mb-1  text-dbeats-light'
+                                  : 'text-sm  mb-1 text-white	'
+                              }
+                            >
+                              {' '}
+                              {message.reply_to.username}
+                            </p>
+                            <p className="text-xs">{message.reply_to.message}</p>
+                          </div>
+                        ) : null}
+                        <div className="inline-flex items-center group">
+                          <div className="chat_message_profile pr-2">
+                            <img
+                              height="50px"
+                              width="50px"
+                              className="rounded-full"
+                              alt="profile"
+                              src={message.profile_image ? message.profile_image : person}
+                            />
+                          </div>
+                          <div className="p-1 mt-1">
+                            <p
+                              className={
+                                message.username === user.username
+                                  ? 'text-base font-bold   text-dbeats-light'
+                                  : 'text-base font-bold  text-white	'
+                              }
+                            >
+                              {message.username}{' '}
+                              <span className="text-xs text-gray-300 font-light">
+                                {new Date(message.createdAt).toLocaleString('en-US', {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                  hour12: true,
+                                })}
+                              </span>
+                            </p>
+                            <p className="text">{message.message}</p>
+                          </div>
+                          <i
+                            onClick={() => onreply(message)}
+                            className=" opacity-0 group-hover:opacity-100 fas fa-reply ml-2 w-4 h-4 cursor-pointer text-dbeats-white text-opacity-40 hover:text-opacity-100"
+                          ></i>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              : '<></>'}
+            <div ref={chatRef} />
+          </div>
+        </main>
+        {showEmojis && (
+          <div className="absolute bottom-16 xl:bottom-24 shadow-none">
+            <Picker onEmojiClick={onEmojiClick} />
+          </div>
+        )}
+        <div className="p-4 rounded-lg dark: bg-dbeats-dark-secondary">
+          {formState.replyto ? (
+            <div className="px-3 p-2 flex items-center	justify-between rounded-xl dark: bg-dbeats-dark-secondary	mb-2">
+              <div className="flex">
+                <div className="chat_message_profile pr-2">
                   <img
                     height="50px"
                     width="50px"
                     className="rounded-full"
                     alt="profile"
-                    src="https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png"
+                    src={formState.replyto.profile_image}
                   />
                 </div>
                 <div className="p-1">
                   <p
                     className={
-                      message.username === user.username
-                        ? 'text-base font-bold mb-1  text-blue-400'
+                      formState.replyto.username === user.username
+                        ? 'text-base font-bold mb-1  text-dbeats-light'
                         : 'text-base font-bold mb-1 text-white	'
                     }
                   >
-                    {message.username}{' '}
-                    <span className="text-sm text-gray-300 font-light">
-                      {new Date(message.createdAt).toDateString()}
+                    {formState.replyto.username}{' '}
+                    <span className="text-xs text-gray-300 font-light">
+                      {new Date(formState.replyto.createdAt).toLocaleString('en-US', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: true,
+                      })}
                     </span>
                   </p>
-                  <p className="text">{message.message}</p>
+                  <p className="text">{formState.replyto.message}</p>
                 </div>
               </div>
-            ))}
-            <div ref={chatRef} />
-          </div>
-        </main>
-        <div className="p-4 rounded-lg dark: bg-dbeats-dark-secondary">
-          <form className="flex" id="chat-form" onSubmit={saveMessage}>
-            <input
-              className="flex-1 dark: bg-dbeats-dark-secondary border-0"
-              onChange={onChange}
-              name="message"
-              value={formState.message}
-              id="msg"
-              type="text"
-              placeholder="Enter Message"
-              required
-              autoComplete={false}
-            />
-            <button type="submit" className="cursor-pointer px-4 py-2 dark: bg-dbeats-dark-primary">
-              <i className="fas fa-paper-plane" /> Send
+              <button
+                onClick={() => {
+                  setForm({ ...formState, replyto: null });
+                }}
+              >
+                X
+              </button>
+            </div>
+          ) : null}
+          <div className="flex">
+            <button onClick={() => setShowEmojis(!showEmojis)}>
+              <img className="w-8 h-8" src={emoji}></img>
             </button>
-          </form>
+            <form className="flex" id="chat-form" onSubmit={saveMessage}>
+              <div className="p-1 nm-flat-dbeats-dark-secondary mx-3 focus:nm-inset-dbeats-dark-secondary">
+                <input
+                  className="flex-grow dark: bg-dbeats-dark-primary border-0  focus:border-dbeats-dark-alt focus:ring-0 focus:nm-inset-dbeats-dark-primary"
+                  onChange={onChange}
+                  name="message"
+                  value={formState.message}
+                  id="msg"
+                  type="text"
+                  placeholder="Enter Message"
+                  required
+                  autoComplete="false"
+                />
+              </div>
+              <div className="p-1 rounded-3xl nm-flat-dbeats-dark-secondary">
+                <button
+                  type="submit"
+                  className="cursor-pointer px-4 py-2 dark: bg-dbeats-dark-primary rounded-3xl"
+                >
+                  <i className="fas fa-paper-plane mr-1" /> Send
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
     </div>
