@@ -2,9 +2,11 @@ import React, { useEffect, useReducer, useRef, useState } from 'react';
 import './chatroom.css';
 import io from 'socket.io-client';
 import Picker from 'emoji-picker-react';
-import emoji from '../../../../assets/images/emoji.png';
-import reply from '../../../../assets/images/reply.svg';
 import person from '../../../../assets/images/profile.svg';
+import { makeStorageClient } from '../../../../component/uploadHelperFunction';
+import prettyBytes from 'pretty-bytes';
+import ReactAudioPlayer from 'react-audio-player';
+
 
 function ChatRoom(props) {
   // to get loggedin user from   localstorage
@@ -16,19 +18,26 @@ function ChatRoom(props) {
     message: '',
     replyto: null,
   });
+
+  const imageInput = useRef();
+  const soundInput = useRef();
+  const videoInput = useRef();
+  const fileInput = useRef();
+
   const [messages, setMessages] = useState([]);
   const [currentSocket, setCurrentSocket] = useState(null);
   const dates = new Set();
-
+  const [selectedFile, setSelectedFile] = useState(null);
   const [showEmojis, setShowEmojis] = useState(false);
-
+  const [showAttachmentDropdown, setShowAttachmentDropdown] = useState(false);
+  const [uploadingFile, setUploadingFile] = useState(false);
   const onEmojiClick = (event, emojiObject) => {
     setForm({ ...formState, message: formState.message + emojiObject.emoji });
   };
   useEffect(() => {
     // initialize gun locally
     if (user) {
-      // https://dbeats-chat.herokuapp.com/
+      // https://dbeats-chat.herokuapp.com
       const socket = io('https://dbeats-chat.herokuapp.com');
       setCurrentSocket(socket);
       socket.emit('joinroom', { user_id: user._id, room_id: props.userp._id });
@@ -49,6 +58,50 @@ function ChatRoom(props) {
   // set a new message in gun, update the local state to reset the form field
   function saveMessage(e) {
     e.preventDefault();
+    if (selectedFile) {
+      setUploadingFile(true);
+      storeWithProgress(selectedFile.file)
+        .then((cid) => {
+          setUploadingFile(false);
+          console.log('https://ipfs.io/ipfs/' + cid + '/' + selectedFile.file[0].name);
+          let room = {
+            room_admin: props.userp._id,
+            chat: {
+              user_id: user._id,
+              username: user.username,
+              profile_image: user.profile_image,
+              type: selectedFile.type,
+              message: formState.message,
+              createdAt: Date.now(),
+              url: 'https://ipfs.io/ipfs/' + cid + '/' + selectedFile.file[0].name,
+              size: selectedFile.size,
+            },
+          };
+          if (formState.replyto) {
+            room.chat.reply_to = formState.replyto;
+          }
+          currentSocket.emit('chatMessage', room);
+          setForm({
+            message: '',
+            replyto: null,
+          });
+          setShowEmojis(false);
+          setShowAttachmentDropdown(false);
+          setSelectedFile(null);
+        })
+        .catch((err) => {
+          console.log(err);
+          setForm({
+            message: '',
+            replyto: null,
+          });
+          setUploadingFile(false);
+          setShowEmojis(false);
+          setShowAttachmentDropdown(false);
+          setSelectedFile(null);
+        });
+      return;
+    }
     let room = {
       room_admin: props.userp._id,
       chat: {
@@ -92,16 +145,46 @@ function ChatRoom(props) {
   const onreply = (message) => {
     setForm({ ...formState, replyto: message });
   };
+  const onFileChange = (event) => {
+    // Update the state
+    setSelectedFile({
+      type: event.target.name,
+      file: event.target.files,
+      localurl: URL.createObjectURL(event.target.files[0]),
+    });
+    setShowAttachmentDropdown(false);
+  };
+
+  async function storeWithProgress(files) {
+    // show the root cid as soon as it's ready
+    const onRootCidReady = (cid) => {};
+    const file = [files[0]];
+    const totalSize = files[0].size;
+    let uploaded = 0;
+    const onStoredChunk = (size) => {
+      uploaded += size;
+      const pct = totalSize / uploaded;
+      // setUploading(10 - pct);
+      // console.log(`Uploading... ${pct}% complete`);
+    };
+
+    // makeStorageClient returns an authorized Web3.Storage client instance
+    const client = makeStorageClient();
+
+    // client.put will invoke our callbacks during the upload
+    // and return the root cid when the upload completes
+    return client.put(file, { onRootCidReady, onStoredChunk });
+  }
 
   return (
-    <div className="text-gray-400	 box-border px-2 h-max lg:col-span-5 col-span-6 w-full mt-16 dark:bg-dbeats-dark-primary">
+    <div className="text-gray-400	 box-border px-2 h-max lg:col-span-5 col-span-6 w-full pt-16 dark:bg-dbeats-dark-primary">
       <div className="overflow-hidden">
-        <main className="chat-container-height">
+        <main className="chat-container-height sticky bottom-0">
           <div className="p-2 chat-height overflow-y-scroll	">
             {messages
               ? messages.map((message) => {
                   const dateNum = new Date(message.createdAt);
-
+                  let size = 0;
                   return (
                     <div key={message._id}>
                       {dates.has(dateNum.toDateString()) ? null : (
@@ -125,12 +208,78 @@ function ChatRoom(props) {
                             <p className="text-xs">{message.reply_to.message}</p>
                           </div>
                         ) : null}
+                        {message.type == 'image' ? (
+                          <div className="w-250">
+                            <img src={message.url}></img>
+                            <p className="text-gray-400 text-xs">{message.url.split('/').pop()}</p>
+                            <p className="text-gray-400 text-xs">Size: {prettyBytes(size)}</p>
+                            <a
+                              className="text-opacity-25 text-white hover:text-opacity-100 "
+                              href={message.url}
+                              download
+                              target="_blank"
+                            >
+                              Download
+                            </a>
+                          </div>
+                        ) : null}
+                        {message.type == 'sound' ? (
+                          <div className=" md:ml-3 p-2 border border-dbeats-light rounded-md">
+                            <div className="md:flex items-center">
+                              <i className="fas fa-music text-4xl text-dbeats-light"></i>
+                              {/* <AudioPlayer
+                                autoPlay={false}
+                                src={message.url}
+                                onPlay={(e) => console.log('onPlay')}
+                                // other props here
+                                style={{}}
+                              /> */}
+                              <ReactAudioPlayer
+                                className="w-full md:w-44"
+                                src={message.url}
+                                controls
+                              />
+                            </div>
+                            <p className="text-gray-400 text-xs">{message.url.split('/').pop()}</p>
+                            <p className="text-gray-400 text-xs">Size: {prettyBytes(size)}</p>
+                            <p className="text-gray-400 text-xs">
+                              <a href={message.url} download target="_blank">
+                                Download
+                              </a>
+                            </p>
+                          </div>
+                        ) : null}
+                        {message.type == 'video' ? (
+                          <div className="w-250 ml-3 p-2 border border-dbeats-light rounded-md">
+                            <i className="fas fa-video text-4xl text-dbeats-light"></i>
+                            <p className="text-gray-400 text-xs">{message.url.split('/').pop()}</p>
+                            <p className="text-gray-400 text-xs">Size: {prettyBytes(size)}</p>
+                            <p className="text-gray-400 text-xs">
+                              <a href={message.url} download target="_blank">
+                                Download
+                              </a>
+                            </p>
+                          </div>
+                        ) : null}
+                        {message.type == 'file' ? (
+                          <div className="w-250 ml-3 p-2 border border-dbeats-light rounded-md">
+                            <i className="fas fa-file text-4xl text-dbeats-light"></i>
+                            <p className="text-gray-400 text-xs">{message.url.split('/').pop()}</p>
+                            <p className="text-gray-400 text-xs">Size: {prettyBytes(size)}</p>
+                            <p className="text-gray-400 text-xs">
+                              <a href={message.url} download target="_blank">
+                                Download
+                              </a>
+                            </p>
+                          </div>
+                        ) : null}
                         <div className="inline-flex items-center group">
-                          <div className="chat_message_profile pr-2">
+                          <div className="chat_message_profile pr-2 h-12 w-12">
                             <img
                               height="50px"
                               width="50px"
                               className="rounded-full"
+                              style={{ width: 'auto', maxWidth: '50px' }}
                               alt="profile"
                               src={message.profile_image ? message.profile_image : person}
                             />
@@ -144,6 +293,11 @@ function ChatRoom(props) {
                               }
                             >
                               {message.username}{' '}
+                              {message.type == 'live' ? (
+                                <span className="text-white bg-red-500 rounded-md font-normal px-2 mx-1 text-sm">
+                                  LIVE
+                                </span>
+                              ) : null}
                               <span className="text-xs text-gray-300 font-light">
                                 {new Date(message.createdAt).toLocaleString('en-US', {
                                   hour: '2-digit',
@@ -153,6 +307,16 @@ function ChatRoom(props) {
                               </span>
                             </p>
                             <p className="text">{message.message}</p>
+                            {message.type == 'live' ? (
+                            //   <ReactHlsPlayer
+                            //   src={`https://cdn.livepeer.com/hls/${props.userp.livepeer_data.playbackId}/index.m3u8`}
+                            //   autoPlay={false}
+                            //   controls={true}
+                            //   width="100%"
+                            //   height="auto"
+                            // />
+                            <div></div>
+                            ) : null}
                           </div>
                           <i
                             onClick={() => onreply(message)}
@@ -168,11 +332,81 @@ function ChatRoom(props) {
           </div>
         </main>
         {showEmojis && (
-          <div className="absolute bottom-16 xl:bottom-24 shadow-none">
+          <div className="absolute  bottom-40  shadow-none">
             <Picker onEmojiClick={onEmojiClick} />
           </div>
         )}
-        <div className="p-4 rounded-lg dark: bg-dbeats-dark-secondary">
+        {showAttachmentDropdown && (
+          <div className="ml-5 absolute  bottom-40  shadow-none w-60 p-2 rounded-lg bg-dbeats-dark-alt">
+            <ul>
+              <input
+                name="image"
+                type="file"
+                accept=".jpg,.png,.jpeg,.gif,.webp"
+                onChange={onFileChange}
+                className="hidden"
+                ref={imageInput}
+              />
+              <input
+                name="sound"
+                type="file"
+                accept=".mp3, .weba"
+                onChange={onFileChange}
+                className="hidden"
+                ref={soundInput}
+              />
+              <input
+                name="video"
+                type="file"
+                accept=".mp4, .mkv, .mov, .avi"
+                onChange={onFileChange}
+                className="hidden"
+                ref={videoInput}
+              />
+              <input
+                name="file"
+                type="file"
+                onChange={onFileChange}
+                className="hidden"
+                ref={fileInput}
+              />
+              <li
+                onClick={() => {
+                  imageInput.current.click();
+                }}
+                className="hover:bg-dbeats-dark-primary cursor-pointer p-2 px-4 hover:text-dbeats-light hover:nm-flat-dbeats-dark-secondary rounded-md"
+              >
+                <i className="fas fa-camera mr-2"></i>Image
+              </li>
+              <li
+                onClick={() => {
+                  soundInput.current.click();
+                }}
+                className="hover:bg-dbeats-dark-primary cursor-pointer p-2 px-4 hover:text-dbeats-light hover:nm-flat-dbeats-dark-secondary rounded-md"
+              >
+                <i className="fas fa-music mr-2"></i>Sound
+              </li>
+              <li
+                onClick={() => {
+                  videoInput.current.click();
+                }}
+                className="hover:bg-dbeats-dark-primary cursor-pointer p-2 px-4 hover:text-dbeats-light hover:nm-flat-dbeats-dark-secondary rounded-md"
+              >
+                <i className="fas fa-video mr-2"></i>Video
+              </li>
+              <li
+                onClick={() => {
+                  fileInput.current.click();
+                }}
+                className="hover:bg-dbeats-dark-primary cursor-pointer p-2 px-4 hover:text-dbeats-light hover:nm-flat-dbeats-dark-secondary rounded-md"
+              >
+                <i className="fas fa-file mr-2"></i>File
+              </li>
+            </ul>
+          </div>
+        )}
+
+        <div className="py-4 md:px-4 rounded-lg bg-dbeats-dark-secondary shadow-md">
           {formState.replyto ? (
             <div className="px-3 p-2 flex items-center	justify-between rounded-xl dark: bg-dbeats-dark-secondary	mb-2">
               <div className="flex">
@@ -214,32 +448,111 @@ function ChatRoom(props) {
               </button>
             </div>
           ) : null}
-          <div className="flex">
-            <button onClick={() => setShowEmojis(!showEmojis)}>
-              <img className="w-8 h-8" src={emoji}></img>
-            </button>
-            <form className="flex" id="chat-form" onSubmit={saveMessage}>
-              <div className="p-1 nm-flat-dbeats-dark-secondary mx-3 focus:nm-inset-dbeats-dark-secondary">
+          {selectedFile ? (
+            <div className="flex justify-between">
+              {selectedFile.type == 'image' && (
+                <img src={selectedFile.localurl} className="w-24 h-24"></img>
+              )}
+              {selectedFile.type == 'sound' && (
+                <div className="ml-3 p-2 border border-dbeats-light rounded-md">
+                  <i className="fas fa-music text-3xl text-dbeats-light"></i>
+                  <p className="text-gray-400 text-xs">{selectedFile.file[0].name}</p>
+                </div>
+              )}
+              {selectedFile.type == 'video' && (
+                <div className="ml-3 p-2 border border-dbeats-light rounded-md">
+                  <i className="fas fa-video text-3xl text-dbeats-light"></i>
+                  <p className="text-gray-400 text-xs">{selectedFile.file[0].name}</p>
+                </div>
+              )}
+              {selectedFile.type == 'file' && (
+                <div className="ml-3 p-2 border border-dbeats-light rounded-md">
+                  <i className="fas fa-file text-3xl text-dbeats-light"></i>
+                  <p className="text-gray-400 text-xs">{selectedFile.file[0].name}</p>
+                </div>
+              )}
+              <button
+                onClick={() => {
+                  setSelectedFile(null);
+                }}
+              >
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+          ) : null}
+          <div className="flex justify-start ">
+            <div
+              onClick={() => {
+                setShowAttachmentDropdown(
+                  showAttachmentDropdown ? !showAttachmentDropdown : showAttachmentDropdown,
+                );
+                setShowEmojis(!showEmojis);
+              }}
+              className=" rounded-3xl group w-max   p-1  mx-1 justify-center  cursor-pointer bg-gradient-to-br from-dbeats-dark-alt to-dbeats-dark-primary  nm-flat-dbeats-dark-secondary   hover:nm-inset-dbeats-dark-primary          flex items-center   font-medium          transform-gpu  transition-all duration-300 ease-in-out "
+            >
+              <span className="  text-black dark:text-white  flex p-1 rounded-3xl bg-gradient-to-br from-dbeats-dark-secondary to-dbeats-dark-primary hover:nm-inset-dbeats-dark-secondary ">
+                <p className="self-center md:mx-2">
+                  {' '}
+                  <i className="far fa-laugh text-base md:text-2xl"></i>
+                </p>
+              </span>
+            </div>
+            <div
+              onClick={() => {
+                setShowAttachmentDropdown(!showAttachmentDropdown);
+                setShowEmojis(showEmojis ? !showEmojis : showEmojis);
+              }}
+              className=" rounded-3xl group w-max   p-1  mx-1 justify-center  cursor-pointer bg-gradient-to-br from-dbeats-dark-alt to-dbeats-dark-primary  nm-flat-dbeats-dark-secondary   hover:nm-inset-dbeats-dark-primary          flex items-center   font-medium          transform-gpu  transition-all duration-300 ease-in-out "
+            >
+              <span className="  text-black dark:text-white  flex p-1 rounded-3xl bg-gradient-to-br from-dbeats-dark-secondary to-dbeats-dark-primary hover:nm-inset-dbeats-dark-secondary ">
+                <p className="self-center md:mx-2">
+                  {' '}
+                  <i className="text-base md:text-2xl fas fa-paperclip"></i>
+                </p>
+              </span>
+            </div>
+
+            <form className="flex flex-grow" id="chat-form" onSubmit={saveMessage}>
+              <div className="flex-grow rounded-md group w-fit  p-1  mx-1  cursor-pointer bg-gradient-to-br from-dbeats-dark-alt to-dbeats-dark-primary  nm-flat-dbeats-dark-secondary   hover:nm-inset-dbeats-dark-primary           font-medium          transform-gpu  transition-all duration-300 ease-in-out ">
+                {' '}
                 <input
-                  className="flex-grow dark: bg-dbeats-dark-primary border-0  focus:border-dbeats-dark-alt focus:ring-0 focus:nm-inset-dbeats-dark-primary"
                   onChange={onChange}
-                  name="message"
                   value={formState.message}
                   id="msg"
+                  name="message"
                   type="text"
                   placeholder="Enter Message"
                   required
                   autoComplete="false"
-                />
+                  className="w-full rounded-md border-0 ring-0 focus:ring-0 focus:border-0 text-black dark:text-white md:px-4 p-2  bg-gradient-to-br from-dbeats-dark-secondary to-dbeats-dark-primary group-hover:nm-inset-dbeats-dark-secondary focus:nm-inset-dbeats-dark-primary placeholder-white placeholder-opacity-25"
+                ></input>
               </div>
-              <div className="p-1 rounded-3xl nm-flat-dbeats-dark-secondary">
+
+              <div
+                className={`${
+                  uploadingFile || formState.message.length < 1
+                    ? 'text-opacity-25 text-white cursor-default'
+                    : 'hover:nm-inset-dbeats-dark-primary hover:text-dbeats-light'
+                }
+                  p-1 rounded-3xl nm-flat-dbeats-dark-secondary cursor-pointer  `}
+              >
                 <button
+                  disabled={uploadingFile}
                   type="submit"
-                  className="cursor-pointer px-4 py-2 dark: bg-dbeats-dark-primary rounded-3xl"
+                  className={`${
+                    uploadingFile || formState.message.length < 1
+                      ? 'dark:bg-dbeats-dark-primary'
+                      : 'bg-gradient-to-br from-dbeats-dark-secondary to-dbeats-dark-primary hover:dark:nm-inset-dbeats-dark-primary'
+                  }  px-4 py-2  rounded-3xl group flex items-center justify-center  `}
                 >
-                  <i className="fas fa-paper-plane mr-1" /> Send
+                  <i className="fas fa-paper-plane mr-2" />
+                  <p className="hidden md:inline">Send</p>
                 </button>
               </div>
+              <div
+                className="animate-spin rounded-full h-7 w-7 ml-3 border-t-2 border-b-2 bg-gradient-to-r from-green-400 to-blue-500 "
+                hidden={!uploadingFile}
+              ></div>
             </form>
           </div>
         </div>
