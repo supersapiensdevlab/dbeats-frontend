@@ -175,21 +175,24 @@ const PlayBackCard = (props) => {
             >
               <Link
                 to={`/playback/${props.playbackUserData.user.username}/${props.playbackUserData.id}`}
-                className=" "
-              >
-                <ReactPlayer
-                  className=" "
-                  width="100%"
-                  height="100%"
-                  playing={playing}
-                  muted={false}
-                  volume={0.5}
-                  url={props.playbackUserData.link}
-                  controls={false}
-                  onMouseMove={handleMouseMove}
-                  onMouseLeave={hanldeMouseLeave}
-                />
-              </Link>
+                className="h-full "
+              ></Link>
+              <ReactPlayer
+                className="w-full h-full max-h-screen "
+                width="100%"
+                height="480px"
+                playing={true}
+                muted={true}
+                volume={0.5}
+                light={props.playbackUserData.artwork}
+                url={props.playbackUserData.link}
+                controls={true}
+              />
+              <img
+                src={props.playbackUserData.artwork}
+                className="w-full h-full max-h-screen hidden"
+              ></img>
+              <p>{console.log(props.playbackUserData)}</p>
             </div>
             <div className="flex   text-black text-sm font-medium   px-4  py-3">
               <Link to={`/profile/${props.playbackUserData.user.username}/`} className="mr-4">
@@ -200,10 +203,10 @@ const PlayBackCard = (props) => {
                       : person
                   }
                   alt=""
-                  className="w-16 h-14 rounded-full    self-start"
+                  className="w-16 h-14 rounded-full self-start"
                 />
               </Link>
-              <div className="w-full flex  justify-between mt-2">
+              <div className="w-full flex justify-between mt-2">
                 <div>
                   <div className="w-full self-center  ">
                     <Link
@@ -229,6 +232,24 @@ const PlayBackCard = (props) => {
                     </span>
                   </div>
                 </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 border-t border-opacity-20 mx-2">
+              <div className="flex text-white  items-center justify-center text-sm font-medium  text-center px-4  py-3">
+                <p className="w-full mt-2 text-center cursor-pointer opacity-50 hover:opacity-100">
+                  <i className="fas fa-heart mr-2"></i>
+                  Like
+                </p>
+              </div>
+              <div className="flex text-white  items-center justify-center text-sm font-medium  text-center px-4  py-3">
+                <p className="w-full mt-2 text-center cursor-pointer opacity-50 hover:opacity-100">
+                  <i className="fas fa-share mr-2"></i>Share
+                </p>
+              </div>
+              <div className="flex  text-white  items-center justify-center text-sm font-medium  text-center px-4  py-3">
+                <p className="w-full mt-2 text-center cursor-pointer opacity-50 hover:opacity-100 flex items-center justify-center">
+                  <i className="fas fa-flag mr-2"></i> Report
+                </p>
               </div>
             </div>
           </div>
