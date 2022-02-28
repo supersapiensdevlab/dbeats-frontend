@@ -1,5 +1,7 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
+import { useDispatch, useSelector } from 'react-redux';
+import { register } from '../../../actions/userActions';
 
 const SignupForm = ({
   loader,
@@ -9,6 +11,17 @@ const SignupForm = ({
   setLoader,
   WalletButton,
 }) => {
+  // Redux
+  const dispatch = useDispatch();
+  const user = useSelector((state) => state.User);
+  useEffect(() => {
+    if (user.isAuthenticated) {
+      window.location.href = '/';
+    }
+    if(user.error){
+      setExistingValue(user.error);
+    }
+  }, [user]);
   //data
   const [form_name, setName] = useState('');
   const [form_username, setUsername] = useState('');
@@ -78,23 +91,24 @@ const SignupForm = ({
       wallet_id: walletId,
     };
 
-    axios({
-      method: 'post',
-      url: `${process.env.REACT_APP_SERVER_URL}/user/add`,
-      data: userData,
-    })
-      .then(function (response) {
-        if (response.data === 'Email' || response.data === 'Username') {
-          setExistingValue(response.data);
-        } else {
-          window.localStorage.setItem('user', JSON.stringify(response.data));
-          window.location.href = '/';
-        }
-      })
-      .catch(function (error) {
-        console.log(error);
-      });
-
+    // axios({
+    //   method: 'post',
+    //   url: `${process.env.REACT_APP_SERVER_URL}/user/add`,
+    //   data: userData,
+    // })
+    //   .then(function (response) {
+    //     if (response.data === 'Email' || response.data === 'Username') {
+    //       setExistingValue(response.data);
+    //     } else {
+    //       window.localStorage.setItem('user', JSON.stringify(response.data));
+    //       window.location.href = '/';
+    //     }
+    //   })
+    //   .catch(function (error) {
+    //     console.log(error);
+    //   });
+    // Redux 
+    dispatch(register(userData));
     setLoader(true);
   };
 

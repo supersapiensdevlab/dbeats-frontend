@@ -47,6 +47,7 @@ import Tables from './views/admin/Tables.js';
 import { useState } from 'react';
 
 import Ticket from './Ticket.js';
+import { loadUser } from './actions/userActions';
 
 export default function App() {
   const user = JSON.parse(window.localStorage.getItem('user'));
@@ -119,7 +120,17 @@ export default function App() {
     fetchData();
 
     // eslint-disable-next-line
+    // Redux
+    dispatch(loadUser());
   }, []);
+
+  // const user_redux = useSelector((state) => state.auth);
+  // const [loader, setLoader] = useState(true);
+  // useEffect(() => {
+  //   // dispatch(loadUser())
+  //   dispatch(loadUser());
+  //   dispatch(loadAdmin());
+  // }, []);
 
   return (
     <>
