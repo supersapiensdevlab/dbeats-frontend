@@ -5,7 +5,7 @@ import { Col, Container, Row } from 'react-bootstrap';
 import { useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
 
-const ChannelSection = (props) => {
+const ChannelSection = ({privateUser, user}) => {
   const [showChannelModal, setShowChannelModal] = useState(false);
   const handleShowChannelModal = () => setShowChannelModal(true);
   const handleCloseChannelModal = () => setShowChannelModal(false);
@@ -58,8 +58,8 @@ const ChannelSection = (props) => {
         <div className="2xl:px-5 lg:px-0 2xl:pt-10 lg:pt-5 fixed ">
           <h5 className="font-semibold text-base dark:text-gray-200 w-full 2xl:text-lg lg:text-sm relative pl-2">
             {' '}
-            {props.user.username}&apos;s Channels
-            {props.privateUser ? (
+            {user.username}&apos;s Channels
+            {privateUser ? (
               <i
                 className="fas fa-plus    cursor-pointer rounded p-2 -top-1 hover:text-white dark:hover:bg-dbeats-dark-alt hover:bg-dbeats-light ml-2 dark:hover:text-dbeats-light"
                 onClick={handleShowChannelModal}
@@ -73,7 +73,7 @@ const ChannelSection = (props) => {
             return (
               <div key={i} className="  2xl:pb-2 2xl:pt-2 lg:my-1 lg:mt-3 2xl:mt-0">
                 <div>
-                  <Link to={`/profile/${props.user.username}/${channel.type}`}>
+                  <Link to={`/profile/${user.username}/${channel.type}`}>
                     <div className="text-gray-600   cursor-pointer 2xl:text-base lg:text-xs dark:text-gray-200 hover:text-white w-full justify-between self-center hover:bg-dbeats-light dark:hover:bg-dbeats-dark-alt dark:hover:text-dbeats-light  rounded 2xl:p-2 lg:p-1.5 relative">
                       {' '}
                       {channel.type === 'text' ? <i className="fas fa-hashtag mr-2"></i> : ''}

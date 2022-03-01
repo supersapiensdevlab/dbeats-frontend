@@ -10,3 +10,9 @@ export const REGISTER_FAIL = 'REGISTER_FAIL';
 export const GET_ERRORS = 'GET_ERRORS';
 export const CLEAR_ERRORS = 'CLEAR_ERRORS';
 export const USER_EXISTS = 'USER_EXISTS';
+
+// For Public User
+export const USER_PUBLIC_LOADING = 'USER_PUBLIC_LOADING';
+export const USER_PUBLIC_LOADED = 'USER_PUBLIC_LOADED';
+export const USER_PUBLIC_ERROR = 'USER_PUBLIC_ERROR';
+

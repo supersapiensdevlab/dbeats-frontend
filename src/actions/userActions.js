@@ -18,7 +18,6 @@ export const loadUser = () => (dispatch) => {
   axios
     .get('/user/getLoggedInUser', tokenConfig())
     .then((res) =>{
-        console.log(res);
       dispatch({
         type: USER_LOADED,
         payload: res.data,
