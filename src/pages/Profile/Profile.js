@@ -11,12 +11,12 @@ import ChatRoom from './ProfileSections/ChatRoom/ChatRoom';
 import ProfileDetails from './ProfileSections/ProfileDetails/ProfileDetails';
 import NFTStore from './ProfileSections/Store/NFT_Store';
 import Ticket from '../../Ticket';
-import {getPublicUser} from '../../actions/userPublicActions'
+import { getPublicUser } from '../../actions/userPublicActions';
 const Profile = () => {
   // Redux
   const dispatch = useDispatch();
   const user_private = useSelector((state) => state.User);
-  const user_public = useSelector((state)=> state.UserPublic)
+  const user_public = useSelector((state) => state.UserPublic);
   // For Routing
   let match = useRouteMatch();
   let params = useParams();
@@ -41,25 +41,26 @@ const Profile = () => {
   useEffect(() => {
     if (user_private.isAuthenticated) {
       if (user_private.user.username === urlUsername) {
-        setSharable_data(`${process.env.REACT_APP_CLIENT_URL}/profile/${user_private.user.username}`);
+        setSharable_data(
+          `${process.env.REACT_APP_CLIENT_URL}/profile/${user_private.user.username}`,
+        );
         setPrivate(true);
         get_NFT(user_private.user.wallet_id);
       } else {
-        dispatch(getPublicUser(urlUsername))
-        if(user_public.user){
+        dispatch(getPublicUser(urlUsername));
+        if (user_public.user) {
           get_NFT(user_public.user.wallet_id);
         }
         setPrivate(false);
       }
     } else {
-      if(user_public.user){
+      if (user_public.user) {
         get_NFT(user_public.user.wallet_id);
       }
-      dispatch(getPublicUser(urlUsername))
+      dispatch(getPublicUser(urlUsername));
       setPrivate(false);
     }
   }, [urlUsername]);
-
 
   // const get_User = async () => {
   //   await axios.get(`${process.env.REACT_APP_SERVER_URL}/user/${urlUsername}`).then((value) => {
@@ -86,7 +87,7 @@ const Profile = () => {
       url: `https://api.covalenthq.com/v1/137/address/${wallet_id}/balances_v2/?quote-currency=USD&format=JSON&nft=true&no-nft-fetch=false&key=ckey_b5245f3db18d4a2d999fef65fc0`,
       headers: {
         'Content-Type': 'application/json',
-        // Authorization: 'ad092d8e-feb0-4430-92f7-1fa501b83bec',
+        // Authorization: `${process.env.COVALENT_API_KEY}`,
       },
     })
       .then((response) => {
@@ -122,7 +123,7 @@ const Profile = () => {
 
   return (
     <>
-      {privateUser && user_private.user || !privateUser && user_public.user ? (
+      {(privateUser && user_private.user) || (!privateUser && user_public.user) ? (
         <div>
           {/* <Dashboard className="ml-20"></Dashboard> */}
 
@@ -138,7 +139,10 @@ const Profile = () => {
               />
               <Switch>
                 <Route path={`/profile/:username/text`}>
-                  <ChatRoom userp={privateUser ? user_private.user : user_public.user} privateUser={privateUser}></ChatRoom>
+                  <ChatRoom
+                    userp={privateUser ? user_private.user : user_public.user}
+                    privateUser={privateUser}
+                  ></ChatRoom>
                 </Route>
                 <Route path={`/profile/:username/store`}>
                   <NFTStore NFTData={NFTData} />

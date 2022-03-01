@@ -13,7 +13,12 @@ const client = ipfsHttpClient('https://ipfs.infura.io:5001/api/v0');
 
 export default function CreateItem() {
   const [fileUrl, setFileUrl] = useState(null);
-  const [formInput, updateFormInput] = useState({ price: '', name: '', description: '' });
+  const [formInput, updateFormInput] = useState({
+    price: '',
+    name: '',
+    description: '',
+    quantity: '',
+  });
   // const router = useRouter();
   const darkMode = useSelector((state) => state.toggleDarkMode);
   let history = useHistory();
@@ -64,15 +69,19 @@ export default function CreateItem() {
     let event = tx.events[0];
     let value = event.args[2];
     let tokenId = value.toNumber();
+    let quantity = formInput.quantity;
     const price = ethers.utils.parseUnits(formInput.price, 'ether');
 
     /* then list the item for sale on the marketplace */
     contract = new ethers.Contract(nftmarketaddress, Market.abi, signer);
-    let listingPrice = await contract.getListingPrice();
-    listingPrice = listingPrice.toString();
-    transaction = await contract.createMarketItem(nftaddress, tokenId, price, {
-      value: listingPrice,
-    });
+    //let listingPrice = await contract.getListingPrice();
+    //listingPrice = listingPrice.toString();
+    transaction = await contract.createMarketItem(
+      nftaddress,
+      tokenId,
+      price,
+      quantity ? quantity : 1,
+    );
     await transaction.wait();
     history.push('/');
   }
