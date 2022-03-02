@@ -1,17 +1,19 @@
 import axios from 'axios';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Modal from 'react-modal';
-
-const ProfileUpdateModal = ({ show, handleClose, userData, darkMode, setDisplayName }) => {
+import { useDispatch, useSelector } from 'react-redux';
+import {loadUser} from '../../../actions/userActions';
+const ProfileUpdateModal = ({ show, handleClose, darkMode, setDisplayName }) => {
   const [buttonText, setButtonText] = useState('Click Here');
-  const [loader, setLoader] = useState(false);
+  
   const [existingValue, setExistingValue] = useState(null);
-
+  const userData = useSelector((state) => state.User)
+  const dispatch = useDispatch();
   const [newData, setNewData] = useState({
-    name: userData.name,
-    email: userData.email,
+    name: userData.user?userData.user.name:'',
+    email: userData.user?userData.user.email:'',
   });
-
+  const [loader, setLoader] = useState(false);
   const handleUserInputs = (e) => {
     let name = e.target.name;
     let value = e.target.value;
@@ -26,7 +28,11 @@ const ProfileUpdateModal = ({ show, handleClose, userData, darkMode, setDisplayN
     axios({
       method: 'POST',
       url: `${process.env.REACT_APP_SERVER_URL}/user/send_wallet_reset`,
-      data: { email: userData.email },
+      data: { email: userData.user.email },
+      headers:{
+        "Content-type": "application/json",
+        "auth-token": localStorage.getItem("authtoken")
+      }
     })
       .then((response) => {
         if (response.data) {
@@ -41,7 +47,7 @@ const ProfileUpdateModal = ({ show, handleClose, userData, darkMode, setDisplayN
   const UpdateData = () => {
     setLoader(true);
     let data = {
-      username: userData.username,
+      username: userData.user.username,
       name: newData.name,
       email: newData.email,
     };
@@ -49,12 +55,17 @@ const ProfileUpdateModal = ({ show, handleClose, userData, darkMode, setDisplayN
       method: 'POST',
       url: `${process.env.REACT_APP_SERVER_URL}/user/update`,
       data: data,
+      headers:{
+        "Content-type": "application/json",
+        "auth-token": localStorage.getItem("authtoken")
+      }
     })
       .then((res) => {
         if (res.data === 'Invalid') {
           setExistingValue(res.data);
         } else {
-          if (userData.name !== newData.name) {
+          dispatch(loadUser())
+          if (userData.user.name !== newData.name) {
             setDisplayName(newData.name);
           }
           handleClose();
@@ -66,7 +77,16 @@ const ProfileUpdateModal = ({ show, handleClose, userData, darkMode, setDisplayN
       });
   };
 
-  return (
+  useEffect(()=>{
+    if(userData.isAuthenticated){
+    setNewData({
+      name:userData.user.name,
+      email: userData.user.email,
+    })
+  }
+  },[userData])
+
+  return (userData.isAuthenticated?(
     <Modal
       isOpen={show}
       className={
@@ -105,7 +125,7 @@ const ProfileUpdateModal = ({ show, handleClose, userData, darkMode, setDisplayN
                   type="text"
                   name="username"
                   id="username"
-                  value={userData.username}
+                  value={userData.user.username}
                   className=" cursor-not-allowed text-white text-opacity-30  dark:bg-dbeats-dark-primary border-dbeats-dark-secondary focus:ring-0 focus:border-dbeats-dark-secondary flex-1 block w-full  sm:text-sm "
                   placeholder=""
                   disabled
@@ -198,12 +218,12 @@ const ProfileUpdateModal = ({ show, handleClose, userData, darkMode, setDisplayN
                 lg:text-md text-md my-auto font-semibold px-5 py-2.5  bg-gradient-to-br from-dbeats-dark-secondary to-dbeats-dark-primary transform  transition-all duration-200
                 dark:text-white
                 ${
-                  newData.name === userData.name && newData.email === userData.email
+                  newData.name === userData.user.name && newData.email === userData.user.email
                     ? 'hidden'
                     : 'cursor-pointer  hover:nm-inset-dbeats-secondary-light  '
                 }
                 `}
-                disabled={newData.name === userData.name && newData.email === userData.email}
+                disabled={newData.name === userData.user.name && newData.email === userData.user.email}
               />
             </div>
             <div
@@ -214,6 +234,7 @@ const ProfileUpdateModal = ({ show, handleClose, userData, darkMode, setDisplayN
         </div>
       </div>
     </Modal>
+    ):null
   );
 };
 

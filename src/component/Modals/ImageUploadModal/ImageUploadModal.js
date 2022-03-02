@@ -3,6 +3,7 @@ import Noty from 'noty';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Cropper from 'react-easy-crop';
 import Modal from 'react-modal';
+import { useSelector } from 'react-redux';
 import { Web3Storage } from 'web3.storage/dist/bundle.esm.min.js';
 import getCroppedImg from './cropImage';
 import classes from './style.module.css';
@@ -14,7 +15,7 @@ function makeStorageClient() {
   });
 }
 
-const user = JSON.parse(window.localStorage.getItem('user'));
+// const user = JSON.parse(window.localStorage.getItem('user'));
 
 const re = /(?:\.([^.]+))?$/;
 
@@ -38,6 +39,7 @@ export const UploadCoverImageModal = ({
   loader,
   setLoader,
   darkMode,
+  user
 }) => {
   //image Crop
   const [image, setImage] = useState({ preview: '', raw: '' });
@@ -139,7 +141,8 @@ export const UploadCoverImageModal = ({
           .post(`${process.env.REACT_APP_SERVER_URL}/user/coverimage`, formData, {
             headers: {
               'content-type': 'multipart/form-data',
-            },
+              "auth-token": localStorage.getItem("authtoken"),
+            }, 
           })
           .then((res) => {
             setLoader(true);
@@ -228,6 +231,7 @@ export const UploadProfileImageModal = ({
   loader,
   setLoader,
   darkMode,
+  user
 }) => {
   const [image, setImage] = useState({ preview: '', raw: '' });
   const wrapperRef = useRef(null);
@@ -327,6 +331,7 @@ export const UploadProfileImageModal = ({
           .post(`${process.env.REACT_APP_SERVER_URL}/user/profileimage`, formData, {
             headers: {
               'content-type': 'multipart/form-data',
+              "auth-token": localStorage.getItem("authtoken"),
             },
           })
           .then((res) => {

@@ -22,13 +22,16 @@ import TrackCard from '../../Cards/TrackCard';
 import dbeatsLogoBnW from '../../../../assets/images/Logo/logo-blacknwhite.png';
 import { Image } from 'react-img-placeholder';
 
-const ProfileDetails = ({ setSharable_data, tabname, urlUsername, user, setShow, darkMode }) => {
+import { useDispatch, useSelector } from 'react-redux';
+
+
+const ProfileDetails = ({ setSharable_data, tabname, urlUsername, user, setShow, darkMode,privateUser }) => {
   const [pinnedData, setPinnedData] = useState([]);
 
   const [followers, setFollowers] = useState(0);
   const [following, setFollowing] = useState(0);
 
-  const [privateUser, setPrivate] = useState(true);
+  // const [privateUser, setPrivate] = useState(true);
   const [loader, setLoader] = useState(true);
   const [isMailVerified, setIsMailVerified] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
@@ -61,48 +64,40 @@ const ProfileDetails = ({ setSharable_data, tabname, urlUsername, user, setShow,
   const [buttonText, setButtonText] = useState('Subscribe');
   const [displayName, setDisplayName] = useState(user.name);
 
-  const myData = JSON.parse(window.localStorage.getItem('user'));
+  // const myData = JSON.parse(window.localStorage.getItem('user'));
+  // Redux
+  const dispatch = useDispatch();
+  const user_private = useSelector((state) => state.User);
 
   useEffect(() => {
-    let value = JSON.parse(window.localStorage.getItem('user'));
-    if (value) {
-      if (value.username === urlUsername) {
-        setSharable_data(`${process.env.REACT_APP_CLIENT_URL}/profile/${value.username}`);
-        setPrivate(true);
-        setFollowers(value.follower_count.length);
-        setFollowing(value.followee_count.length);
-        setIsMailVerified(value.is_mail_verified);
-        setIsVerified(value.is_verified);
+    // let value = JSON.parse(window.localStorage.getItem('user'));
+        setSharable_data(`${process.env.REACT_APP_CLIENT_URL}/profile/${user.username}`);
+        setFollowers(user.follower_count.length);
+        setFollowing(user.followee_count.length);
+        setIsMailVerified(user.is_mail_verified);
+        setIsVerified(user.is_verified);
 
-        if (value.pinned) {
-          setPinnedData(value.pinned);
+        if (user.pinned) {
+          setPinnedData(user.pinned);
         }
 
-        if (value.cover_image && value.cover_image !== '') {
-          setCoverImage(value.cover_image);
+        if (user.cover_image && user.cover_image !== '') {
+          setCoverImage(user.cover_image);
         } else {
           setCoverImage(background);
         }
 
-        if (value.profile_image && value.profile_image !== '') {
-          setProfileImage(value.profile_image);
+        if (user.profile_image && user.profile_image !== '') {
+          setProfileImage(user.profile_image);
         } else {
           console.log('person', person);
           setProfileImage(person);
         }
 
-        if (value.posts) {
-          let data = value.posts;
+        if (user.posts) {
+          let data = user.posts;
           setPostsData(data.reverse());
         }
-      } else {
-        get_User();
-        setPrivate(false);
-      }
-    } else {
-      get_User();
-      setPrivate(false);
-    }
     // eslint-disable-next-line
   }, [urlUsername]);
 
@@ -137,44 +132,44 @@ const ProfileDetails = ({ setSharable_data, tabname, urlUsername, user, setShow,
 
   console.log(navigate);
 
-  const get_User = async () => {
-    await axios.get(`${process.env.REACT_APP_SERVER_URL}/user/${urlUsername}`).then((value) => {
-      for (let i = 0; i < value.data.follower_count.length; i++) {
-        if (myData) {
-          if (value.data.follower_count[i] === myData.username) {
-            setButtonText('Unsubscribe');
-            break;
-          }
-        } else {
-          setButtonText('Login to Subscribe');
-          break;
-        }
-      }
-      setSharable_data(`${process.env.REACT_APP_CLIENT_URL}/profile/${value.data.username}`);
-      setFollowers(value.data.follower_count.length);
-      setFollowing(value.data.followee_count.length);
-      setIsMailVerified(value.data.is_mail_verified);
-      setIsVerified(value.data.is_verified);
+  // const get_User = async () => {
+  //   await axios.get(`${process.env.REACT_APP_SERVER_URL}/user/${urlUsername}`).then((value) => {
+  //     for (let i = 0; i < value.data.follower_count.length; i++) {
+  //       if (myData) {
+  //         if (value.data.follower_count[i] === myData.username) {
+  //           setButtonText('Unsubscribe');
+  //           break;
+  //         }
+  //       } else {
+  //         setButtonText('Login to Subscribe');
+  //         break;
+  //       }
+  //     }
+  //     setSharable_data(`${process.env.REACT_APP_CLIENT_URL}/profile/${value.data.username}`);
+  //     setFollowers(value.data.follower_count.length);
+  //     setFollowing(value.data.followee_count.length);
+  //     setIsMailVerified(value.data.is_mail_verified);
+  //     setIsVerified(value.data.is_verified);
 
-      if (value.data.cover_image && value.data.cover_image !== '') {
-        setCoverImage(value.data.cover_image);
-      } else {
-        setCoverImage(background);
-      }
+  //     if (value.data.cover_image && value.data.cover_image !== '') {
+  //       setCoverImage(value.data.cover_image);
+  //     } else {
+  //       setCoverImage(background);
+  //     }
 
-      if (value.data.posts) {
-        let data = value.data.posts;
-        setPostsData(data.reverse());
-      }
+  //     if (value.data.posts) {
+  //       let data = value.data.posts;
+  //       setPostsData(data.reverse());
+  //     }
 
-      if (value.data.profile_image && value.data.profile_image !== '') {
-        setProfileImage(value.data.profile_image);
-      } else {
-        console.log('person', person);
-        setProfileImage(person);
-      }
-    });
-  };
+  //     if (value.data.profile_image && value.data.profile_image !== '') {
+  //       setProfileImage(value.data.profile_image);
+  //     } else {
+  //       console.log('person', person);
+  //       setProfileImage(person);
+  //     }
+  //   });
+  // };
 
   function classNames(...classes) {
     return classes.filter(Boolean).join(' ');
@@ -188,15 +183,16 @@ const ProfileDetails = ({ setSharable_data, tabname, urlUsername, user, setShow,
     //console.log(followers);
     const followData = {
       following: `${user.username}`,
-      follower: `${myData.username}`,
+      follower: `${user_private.user.username}`,
     };
 
     if (buttonText === 'Subscribe') {
       axios({
         method: 'POST',
         url: `${process.env.REACT_APP_SERVER_URL}/user/follow`,
-        headers: {
-          'content-type': 'application/json',
+        headers:{
+          "Content-type": "application/json",
+          "auth-token": localStorage.getItem("authtoken"),
           'Access-Control-Allow-Origin': '*',
         },
         data: followData,
@@ -217,8 +213,9 @@ const ProfileDetails = ({ setSharable_data, tabname, urlUsername, user, setShow,
       axios({
         method: 'POST',
         url: `${process.env.REACT_APP_SERVER_URL}/user/unfollow`,
-        headers: {
-          'content-type': 'application/json',
+        headers:{
+          "Content-type": "application/json",
+          "auth-token": localStorage.getItem("authtoken"),
           'Access-Control-Allow-Origin': '*',
         },
         data: followData,
@@ -240,7 +237,7 @@ const ProfileDetails = ({ setSharable_data, tabname, urlUsername, user, setShow,
 
   const UnPinningUser = (pinnedUser) => {
     const UnPinningData = {
-      username: myData.username,
+      username: user_private.username,
       pinneduser: pinnedUser,
     };
 
@@ -248,6 +245,10 @@ const ProfileDetails = ({ setSharable_data, tabname, urlUsername, user, setShow,
       method: 'POST',
       url: `${process.env.REACT_APP_SERVER_URL}/user/unpin`,
       data: UnPinningData,
+      headers:{
+        "Content-type": "application/json",
+        "auth-token": localStorage.getItem("authtoken"),
+      },
     })
       .then(() => {
         let value = [];
@@ -265,7 +266,7 @@ const ProfileDetails = ({ setSharable_data, tabname, urlUsername, user, setShow,
 
   const PinningUser = (pinnedUser) => {
     const PinningData = {
-      username: myData.username,
+      username: user_private.user.username,
       pinneduser: pinnedUser,
     };
 
@@ -273,6 +274,10 @@ const ProfileDetails = ({ setSharable_data, tabname, urlUsername, user, setShow,
       method: 'POST',
       url: `${process.env.REACT_APP_SERVER_URL}/user/pinned`,
       data: PinningData,
+      headers:{
+        "Content-type": "application/json",
+        "auth-token": localStorage.getItem("authtoken"),
+      },
     })
       .then(() => {
         setPinnedData((prevData) => [...prevData, pinnedUser]);
@@ -283,11 +288,15 @@ const ProfileDetails = ({ setSharable_data, tabname, urlUsername, user, setShow,
   };
 
   const SendVerificationMail = () => {
-    let data = { email: myData.email };
+    let data = { email: user_private.user.email };
     axios({
       method: 'POST',
       url: `${process.env.REACT_APP_SERVER_URL}/user/send_verify_email`,
       data: data,
+      headers:{
+        "Content-type": "application/json",
+        "auth-token": localStorage.getItem("authtoken"),
+      },
     })
       .then(() => {
         setIsMailVerified(true);
@@ -384,7 +393,7 @@ const ProfileDetails = ({ setSharable_data, tabname, urlUsername, user, setShow,
                       <span className="font-bold 2xl:text-xl lg:text-xl md:text-xl mr-3 font-GTWalsheimPro">
                         {user.name}
                       </span>
-                      {myData && !privateUser ? (
+                      {user_private.user && !privateUser ? (
                         <button
                           href="#"
                           className="flex items-center no-underline cursor-pointer border-dbeats-light border-1  
@@ -747,8 +756,10 @@ const ProfileDetails = ({ setSharable_data, tabname, urlUsername, user, setShow,
         loader={loader}
         setLoader={setLoader}
         darkMode={darkMode}
+        user={user_private.user}
       />
       <UploadProfileImageModal
+      user={user_private.user}
         show={showUploadProfileImage}
         handleClose={handleCloseImage}
         setProfileImage={setProfileImage}

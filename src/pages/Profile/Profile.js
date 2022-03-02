@@ -60,7 +60,7 @@ const Profile = () => {
       dispatch(getPublicUser(urlUsername));
       setPrivate(false);
     }
-  }, [urlUsername]);
+  }, [urlUsername,user_private]);
 
   // const get_User = async () => {
   //   await axios.get(`${process.env.REACT_APP_SERVER_URL}/user/${urlUsername}`).then((value) => {

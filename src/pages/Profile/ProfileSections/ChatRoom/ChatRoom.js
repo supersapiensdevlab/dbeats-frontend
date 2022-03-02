@@ -9,10 +9,11 @@ import ReactAudioPlayer from 'react-audio-player';
 import LoadingBar from 'react-top-loading-bar';
 import ChatLinkPreview from './ChatLinkPreview';
 import InfiniteScroll from 'react-infinite-scroller';
+import { useSelector } from 'react-redux';
 
 function ChatRoom(props) {
   // to get loggedin user from   localstorage
-  const user = JSON.parse(window.localStorage.getItem('user'));
+  const user = useSelector((state) => state.User);
 
   const chatRef = useRef(null);
   const loadingRef = useRef(null);
@@ -26,31 +27,29 @@ function ChatRoom(props) {
   const soundInput = useRef();
   const videoInput = useRef();
   const fileInput = useRef();
-  
+
   // For reply click ref
   const scrollTop = useRef(null);
   const messageRef = useRef([]);
-  const [goToMessage,setGoToMessage] = useState(false);
+  const [goToMessage, setGoToMessage] = useState(false);
   function scrollTo(id) {
     setGoToMessage(id);
   }
 
-
-
   const [messages, setMessages] = useState([]);
-  useEffect(()=>{
-    if(goToMessage){
-      if(messageRef.current[goToMessage]){
-        console.log('scrolling to '+goToMessage)
+  useEffect(() => {
+    if (goToMessage) {
+      if (messageRef.current[goToMessage]) {
+        console.log('scrolling to ' + goToMessage);
         messageRef.current[goToMessage].scrollIntoView();
         setGoToMessage(false);
-      }else{
-        console.log('loading chats ')
+      } else {
+        console.log('loading chats ');
         scrollTop.current.scrollIntoView();
       }
     }
-    console.log('out of ifs')
-  },[messages,goToMessage])
+    console.log('out of ifs');
+  }, [messages, goToMessage]);
   const [currentSocket, setCurrentSocket] = useState(null);
   const dates = new Set();
   const [selectedFile, setSelectedFile] = useState(null);
@@ -72,12 +71,13 @@ function ChatRoom(props) {
   };
   useEffect(() => {
     // initialize gun locally
-    if (user) {
+    console.log(user);
+    if (user.isAuthenticated && currentSocket === null) {
       loadingRef.current.continuousStart();
       // https://dbeats-chat.herokuapp.com
       const socket = io('https://dbeats-chat.herokuapp.com');
       setCurrentSocket(socket);
-      socket.emit('joinroom', { user_id: user._id, room_id: props.userp._id });
+      socket.emit('joinroom', { user_id: user.user._id, room_id: props.userp._id });
       socket.on('init', (msgs) => {
         loadingRef.current.complete();
         setMessages(msgs.chats);
@@ -105,10 +105,12 @@ function ChatRoom(props) {
       window.history.replaceState({}, 'Home', '/');
     }
     return () => {
-      currentSocket.disconnect();
+      if (currentSocket) {
+        currentSocket.disconnect();
+      }
     };
     // eslint-disable-next-line
-  }, []);
+  }, [user]);
 
   // set a new message in gun, update the local state to reset the form field
   function saveMessage(e) {
@@ -122,7 +124,7 @@ function ChatRoom(props) {
           let room = {
             room_admin: props.userp._id,
             chat: {
-              user_id: user._id,
+              user_id: user.user._id,
               type: selectedFile.type,
               message: formState.message,
               createdAt: Date.now(),
@@ -158,9 +160,9 @@ function ChatRoom(props) {
     let room = {
       room_admin: props.userp._id,
       chat: {
-        user_id: user._id,
-        username: user.username,
-        profile_image: user.profile_image,
+        user_id: user.user._id,
+        username: user.user.username,
+        profile_image: user.user.profile_image,
         type: 'text',
         message: formState.message,
         createdAt: Date.now(),
@@ -249,7 +251,7 @@ function ChatRoom(props) {
                 if (currentSocket && currentPage > 0 && !loadingOldChats) {
                   setLoadingOldChats(true);
                   currentSocket.emit('loadmore', {
-                    user_id: user._id,
+                    user_id: user.user._id,
                     room_id: props.userp._id,
                     page_no: currentPage - 1,
                   });
@@ -279,12 +281,14 @@ function ChatRoom(props) {
                         )}
                         <div className=" px-3 p-2 rounded	 dark: bg-dbeats-dark-secondary	my-1 inline-block shadow">
                           {message.reply_to ? (
-                            <div onClick={()=> scrollTo(message.reply_to._id)} className="cursor-pointer flex justify-between items-center group  px-3 py-2 border-l-2 border-dbeats-light  dark: nm-inset-dbeats-dark-primary">
+                            <div
+                              onClick={() => scrollTo(message.reply_to._id)}
+                              className="cursor-pointer flex justify-between items-center group  px-3 py-2 border-l-2 border-dbeats-light  dark: nm-inset-dbeats-dark-primary"
+                            >
                               <div className="">
-                                
                                 <p
                                   className={
-                                    message.reply_to.username === user.username
+                                    message.reply_to.username === user.user.username
                                       ? 'text-sm  mb-1  text-dbeats-light'
                                       : 'text-sm  mb-1 text-white	'
                                   }
@@ -294,7 +298,7 @@ function ChatRoom(props) {
                                 </p>
                                 <p className="text-xs">{message.reply_to.message}</p>
                               </div>
-                              <div className='p-2'>
+                              <div className="p-2">
                                 {message.reply_to.type == 'image' && (
                                   <i class="fas fa-image text-2xl text-dbeats-light"></i>
                                 )}
@@ -390,7 +394,7 @@ function ChatRoom(props) {
                             <div className="p-1 mt-1">
                               <p
                                 className={
-                                  message.username === user.username
+                                  message.username === user.user.username
                                     ? 'text-base font-bold   text-dbeats-light'
                                     : 'text-base font-bold  text-white	'
                                 }
@@ -429,7 +433,7 @@ function ChatRoom(props) {
                               ) : null}
 
                               {urls &&
-                                urls.map((u,index) => {
+                                urls.map((u, index) => {
                                   return (
                                     <a href={u} key={index}>
                                       <ChatLinkPreview
@@ -451,10 +455,14 @@ function ChatRoom(props) {
                     );
                   })
                 : '<></>'}
-            
             </InfiniteScroll>
-            <i onClick={()=>{chatRef.current.scrollIntoView({ behavior: 'smooth' });}} class="fas fa-angle-double-down text-xl text-dbeats-light fixed right-4 bottom-24 px-4 py-2 rounded-full bg-dbeats-dark-secondary xl:text-2xl xl:right-8 cursor-pointer"></i>
-              <div ref={chatRef} />
+            <i
+              onClick={() => {
+                chatRef.current.scrollIntoView({ behavior: 'smooth' });
+              }}
+              class="fas fa-angle-double-down text-xl text-dbeats-light fixed right-4 bottom-24 px-4 py-2 rounded-full bg-dbeats-dark-secondary xl:text-2xl xl:right-8 cursor-pointer"
+            ></i>
+            <div ref={chatRef} />
           </div>
         </main>
         {showEmojis && (
@@ -548,7 +556,7 @@ function ChatRoom(props) {
                 <div className="p-1">
                   <p
                     className={
-                      formState.replyto.username === user.username
+                      formState.replyto.username === user.user.username
                         ? 'text-base font-bold mb-1  text-dbeats-light'
                         : 'text-base font-bold mb-1 text-white	'
                     }
