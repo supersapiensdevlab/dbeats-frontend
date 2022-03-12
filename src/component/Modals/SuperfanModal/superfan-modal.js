@@ -1,6 +1,6 @@
 import { Web3Provider } from '@ethersproject/providers';
 import SuperfluidSDK from '@superfluid-finance/js-sdk';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Container } from 'react-bootstrap';
 import Modal from 'react-modal';
 import { useSelector } from 'react-redux';
@@ -19,7 +19,9 @@ const SuperfanModal = ({ show, handleClose, userDataDetails }) => {
   const darkMode = useSelector((darkmode) => darkmode.toggleDarkMode);
 
   const [showBuyCrypto, setShowBuyCrypto] = useState(false);
-  const buyCrypto = () => setShowBuyCrypto(!showBuyCrypto);
+  const buyCrypto = () => {
+    setShowBuyCrypto(!showBuyCrypto);
+  };
 
   const [showRecurring, setShowRecurring] = useState(false);
   const toggleRecurring = () => setShowRecurring(!showRecurring);
@@ -337,7 +339,7 @@ const SuperfanModal = ({ show, handleClose, userDataDetails }) => {
                         )
                       }
                       className="rounded-full block shadow text-center col-span-1  bg-white dark:bg-dbeats-dark-primary text-black dark:text-white  
-               2xl:w-max w-max px-5 lg:w-60  mx-auto py-2      font-semibold   border border-dbeats-light dark:border-dbeats-light dark:hover:border-dbeats-light  hover:border-dbeats-light hover:shadow-none 
+               2xl:w-max w-max px-5 mx-auto py-2      font-semibold   border border-dbeats-light dark:border-dbeats-light dark:hover:border-dbeats-light  hover:border-dbeats-light hover:shadow-none 
                transition-all transform hover:scale-99 hover:bg-dbeats-light dark:hover:bg-dbeats-light hover:text-white "
                     >
                       <span className="font-semibold text-md px-4 ">Join</span>
@@ -387,7 +389,7 @@ const SuperfanModal = ({ show, handleClose, userDataDetails }) => {
                           )
                         }
                         className="rounded-full block shadow text-center col-span-1  bg-white dark:bg-dbeats-dark-primary text-black dark:text-white  
-               2xl:w-max w-max px-5 lg:w-60  mx-auto py-2      font-semibold   border border-dbeats-light dark:border-dbeats-light dark:hover:border-dbeats-light  hover:border-dbeats-light hover:shadow-none 
+               2xl:w-max w-max px-5   mx-auto py-2      font-semibold   border border-dbeats-light dark:border-dbeats-light dark:hover:border-dbeats-light  hover:border-dbeats-light hover:shadow-none 
                transition-all transform hover:scale-99 hover:bg-dbeats-light dark:hover:bg-dbeats-light hover:text-white "
                       >
                         <span className="font-semibold text-md px-4 ">Join</span>
@@ -434,7 +436,7 @@ const SuperfanModal = ({ show, handleClose, userDataDetails }) => {
                         )
                       }
                       className="rounded-full block shadow text-center col-span-1  bg-white dark:bg-dbeats-dark-primary text-black dark:text-white  
-               2xl:w-max w-max px-5 lg:w-60  mx-auto py-2      font-semibold   border border-dbeats-light dark:border-dbeats-light dark:hover:border-dbeats-light  hover:border-dbeats-light hover:shadow-none 
+               2xl:w-max w-max px-5   mx-auto py-2      font-semibold   border border-dbeats-light dark:border-dbeats-light dark:hover:border-dbeats-light  hover:border-dbeats-light hover:shadow-none 
                transition-all transform hover:scale-99 hover:bg-dbeats-light dark:hover:bg-dbeats-light hover:text-white "
                     >
                       <span className="font-semibold text-md px-4 ">Join</span>
@@ -463,7 +465,7 @@ const SuperfanModal = ({ show, handleClose, userDataDetails }) => {
                   ></img>
                 </>
               ) : (
-                'Cancel'
+                'Back'
               )}
             </button>
             {showBuyCrypto ? (

@@ -7,6 +7,7 @@ import maticLogo from '../../../assets/graphics/polygon-matic-logo.svg';
 import dbeatsLogoBnW from '../../../assets/images/Logo/logo-blacknwhite.png';
 import person from '../../../assets/images/profile.svg';
 import axios from 'axios';
+import BidModal from '../../../component/Modals/BidModal/BidModal';
 
 moment().format();
 
@@ -39,6 +40,7 @@ const PlayBackCard = (props) => {
 
   const [buttonText, setButtonText] = useState('follow');
   const [followers, setFollowers] = useState(0);
+  const [listingPrice, setListingPrice] = useState(null);
 
   const trackFollowers = () => {
     setSubscribeLoader(false);
@@ -57,7 +59,7 @@ const PlayBackCard = (props) => {
         url: `${process.env.REACT_APP_SERVER_URL}/user/follow`,
         headers: {
           'content-type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
+          'auth-token':localStorage.getItem("authtoken")
         },
         data: followData,
       })
@@ -79,7 +81,7 @@ const PlayBackCard = (props) => {
         url: `${process.env.REACT_APP_SERVER_URL}/user/unfollow`,
         headers: {
           'content-type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
+          'auth-token':localStorage.getItem('authtoken')
         },
         data: followData,
       })
@@ -98,9 +100,13 @@ const PlayBackCard = (props) => {
     }
   };
 
+  const [showBidModal, setShowBidModal] = useState(false);
+  const handleCloseBidModal = () => setShowBidModal(false);
+  const handleShowBidModal = () => setShowBidModal(true);
+
   return (
     <>
-      {props.playbackUserData ? (
+      {props.playbackUserData.user ? (
         <div
           className={`${props.darkMode && 'dark'} my-4  dark:text-gray-50 
            shadow-sm dark:shadow-md  p-0.5  sm:rounded-xl bg-gradient-to-br from-dbeats-dark-alt to-dbeats-dark-primary  nm-flat-dbeats-dark-primary-lg      text-dbeats-dark-primary    relative   `}
@@ -192,7 +198,6 @@ const PlayBackCard = (props) => {
                 src={props.playbackUserData.artwork}
                 className="w-full h-full max-h-screen hidden"
               ></img>
-              <p>{console.log(props.playbackUserData)}</p>
             </div>
             <div className="flex   text-black text-sm font-medium   px-4  py-3">
               <Link to={`/profile/${props.playbackUserData.user.username}/`} className="mr-4">
@@ -213,24 +218,40 @@ const PlayBackCard = (props) => {
                       to={`/profile/${props.playbackUserData.user.username}/`}
                       className="2xl:text-sm lg:text-xs text-sm text-gray-500  mb-2"
                     >
-                      {props.playbackUserData.user.name}
+                      <h4>{props.playbackUserData.user.name} </h4>
                     </Link>{' '}
                     <div className="2xl:text-sm lg:text-xs text-sm text-gray-500 pr-2 flex  ">
                       owner
                     </div>
                   </div>
                 </div>
-                <div>
-                  <div className=" rounded-3xl group w-max ml-2 p-1  mx-1 justify-center  cursor-pointer bg-gradient-to-br from-dbeats-dark-alt to-dbeats-dark-primary  nm-flat-dbeats-dark-primary   hover:nm-inset-dbeats-dark-primary          flex items-center   font-medium          transform-gpu  transition-all duration-300 ease-in-out ">
-                    <span className="  text-black dark:text-white  flex p-1 rounded-3xl bg-gradient-to-br from-dbeats-dark-secondary to-dbeats-dark-secondary hover:nm-inset-dbeats-dark-secondary ">
-                      <img
-                        className="h-7 w-7 p-1  mr-1   text-white self-center align-middle items-center     "
-                        src={maticLogo}
-                        alt="logo"
-                      ></img>
-                      <p className="self-center mx-2"> 200</p>
-                    </span>
-                  </div>
+                <div className="flex ">
+                  {listingPrice ? (
+                    <div className=" rounded-3xl group w-max ml-2 p-1  mx-1 justify-center  cursor-pointer bg-gradient-to-br from-dbeats-dark-alt to-dbeats-dark-primary  nm-flat-dbeats-dark-primary   hover:nm-inset-dbeats-dark-primary          flex items-center   font-medium          transform-gpu  transition-all duration-300 ease-in-out ">
+                      <span className="  text-black dark:text-white  flex p-1 rounded-3xl bg-gradient-to-br from-dbeats-dark-secondary to-dbeats-dark-secondary hover:nm-inset-dbeats-dark-secondary ">
+                        <img
+                          className="h-7 w-7 p-1  mr-1   text-white self-center align-middle items-center     "
+                          src={maticLogo}
+                          alt="logo"
+                        ></img>
+                        <p className="self-center mx-2">200</p>
+                      </span>
+                    </div>
+                  ) : (
+                    <div
+                      onClick={handleShowBidModal}
+                      className=" rounded-3xl group w-max ml-2 p-1  mx-1 justify-center  cursor-pointer bg-gradient-to-br from-dbeats-dark-alt to-dbeats-dark-primary  nm-flat-dbeats-dark-primary   hover:nm-inset-dbeats-dark-primary          flex items-center   font-medium          transform-gpu  transition-all duration-300 ease-in-out "
+                    >
+                      <span className="  text-black dark:text-white  flex p-1 rounded-3xl bg-gradient-to-br from-dbeats-dark-secondary to-dbeats-dark-secondary hover:nm-inset-dbeats-dark-secondary ">
+                        <img
+                          className="h-7 w-7 p-1  mr-1   text-white self-center align-middle items-center     "
+                          src={maticLogo}
+                          alt="logo"
+                        ></img>
+                        <p className="self-center mx-2">Make an offer</p>
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -255,6 +276,7 @@ const PlayBackCard = (props) => {
           </div>
         </div>
       ) : null}
+      <BidModal isBidOpen={showBidModal} handleCloseBid={handleCloseBidModal}></BidModal>
     </>
   );
 };

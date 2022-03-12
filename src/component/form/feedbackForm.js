@@ -1,7 +1,8 @@
 import { Fragment } from 'react';
 import React, { useState } from 'react';
-
 import { Transition } from '@headlessui/react';
+import axios from 'axios';
+import Noty from 'noty';
 
 const FeedbackForm = () => {
   const [showFeedback, setShowFeedback] = useState(false);
@@ -9,6 +10,53 @@ const FeedbackForm = () => {
 
   const [showWelcome, setShowWelcome] = useState(true);
   const handleShowWelcome = () => setShowWelcome(false);
+
+  const userFeedback = {
+    feedback: '',
+    email: '',
+  };
+
+  const [values, setValues] = useState(userFeedback);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setValues({ ...values, [name]: value });
+  };
+
+  const handleFeedbackSubmit = (e) => {
+    let feedbackData = values;
+    axios({
+      method: 'POST',
+      url: `${process.env.REACT_APP_SERVER_URL}/user/send_feedback`,
+      data: feedbackData,
+      headers: {
+        'content-type': 'application/json',
+        'auth-token': localStorage.getItem('authtoken'),
+      },
+    })
+      .then((response) => {
+        console.log('success');
+        Noty.closeAll();
+        new Noty({
+          type: 'success',
+          text: 'We appreciate your valuable feedback',
+          theme: 'metroui',
+          layout: 'bottomRight',
+        }).show();
+        window.location.href = '/';
+      })
+      .catch((err) => {
+        console.log(err);
+        Noty.closeAll();
+        new Noty({
+          type: 'error',
+          text: 'Feedback not submitted, kindly re-submit',
+          theme: 'metroui',
+          layout: 'bottomRight',
+        }).show();
+      });
+  };
+
   return (
     <>
       <Transition
@@ -39,7 +87,7 @@ const FeedbackForm = () => {
                 }}
                 className="  transform-gpu  transition-all duration-300 ease-in-out mt-3 cursor-pointer relative inline-flex items-center justify-center p-1 mb-2 mr-2 overflow-hidden text-sm font-medium text-gray-900 rounded-3xl  bg-gradient-to-br from-dbeats-dark-alt to-dbeats-dark-primary  nm-flat-dbeats-dark-primary   hover:nm-inset-dbeats-dark-primary   hover:text-white dark:text-white  "
               >
-                <span className="relative px-5 py-2.5   bg-gradient-to-br from-dbeats-light to-dbeats-secondary-light hover:nm-inset-dbeats-secondary-light  rounded-3xl">
+                <span className="relative px-5 py-2.5 whitespace-nowrap text-xs sm:text-sm  bg-gradient-to-br from-dbeats-light to-dbeats-secondary-light hover:nm-inset-dbeats-secondary-light  rounded-3xl">
                   Leave your feedback
                 </span>
               </div>
@@ -58,7 +106,7 @@ const FeedbackForm = () => {
                   close
                 </a>
               </div>
-              <form className=" col-span-1">
+              <div className=" col-span-1">
                 <p className="">
                   How is it going so far?
                   <br></br>
@@ -66,24 +114,28 @@ const FeedbackForm = () => {
                     required
                     type="text"
                     name="feedback"
+                    value={values.feedback}
+                    onChange={handleChange}
                     className="mt-1 px-3 py-2 text-gray-900 dark:text-dbeats-white dark:bg-dbeats-dark-secondary bg-white border shadow-sm border-gray-300 placeholder-gray-400 focus:outline-none focus:border-dbeats-light focus:ring-dbeats-light block    w-full rounded sm:text-sm focus:ring-1"
                     placeholder="Tell us more"
                   />
                   <input
                     type="email"
                     name="email"
+                    value={values.email}
                     required
+                    onChange={handleChange}
                     className="mt-1 px-3 py-2 text-gray-900 dark:text-dbeats-white dark:bg-dbeats-dark-secondary bg-white border shadow-sm border-gray-300 placeholder-gray-400 focus:outline-none focus:border-dbeats-light focus:ring-dbeats-light block    w-full rounded sm:text-sm focus:ring-1"
                     placeholder="Your Email (optional)"
                   />
                 </p>
-                <div
-                  type="submit"
+                <button
+                  onClick={handleFeedbackSubmit}
                   className="px-5 py-2 bg-dbeats-light w-max rounded mt-4 text-white cursor-pointer hover:bg-dbeats-secondary-light"
                 >
                   Send feedback
-                </div>
-              </form>
+                </button>
+              </div>
               <div className=" col-span-1">
                 join us on <br className="mt-1"></br>
                 <a

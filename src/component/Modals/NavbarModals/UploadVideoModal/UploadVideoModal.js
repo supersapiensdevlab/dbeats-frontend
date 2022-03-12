@@ -7,9 +7,20 @@ import { useSelector } from 'react-redux';
 import Dropdown from '../../../dropdown.component';
 import { makeStorageClient } from '../../../uploadHelperFunction';
 import { chipTheme, theme } from '../Theme';
+import Web3Modal from 'web3modal';
+import { ethers } from 'ethers';
+import Market from '../../../../artifacts/contracts/Market.sol/NFTMarket.json';
+import { nftmarketaddress } from '../../../../functions/config';
+import { Transition } from '@headlessui/react';
+import Web3 from 'web3';
+import useWeb3Modal from '../../../../hooks/useWeb3Modal';
+import { Web3Auth } from '@web3auth/web3auth';
+import { CHAIN_NAMESPACES, CustomChainConfig } from '@web3auth/base';
+import detectEthereumProvider from '@metamask/detect-provider';
 
 const UploadVideoModal = (props) => {
   const user = JSON.parse(window.localStorage.getItem('user'));
+  const [provider, loadWeb3Modal, logoutOfWeb3Modal] = useWeb3Modal();
 
   const darkMode = useSelector((darkmode) => darkmode.toggleDarkMode);
   const attribution = ['No Attribution', 'Allow Attribution'];
@@ -36,6 +47,9 @@ const UploadVideoModal = (props) => {
   ];
 
   const suggestions = ['Games', 'Edu', 'Sci-Fi', 'Counter-Strike'];
+
+  const [isNFT, setIsNFT] = useState(true);
+  const [NFTprice, setPrice] = useState(0);
 
   const [selectedAttribution, setSelectedAttribution] = useState(attribution[0]);
   const [selectedCommercialUse, setSelectedCommercialUse] = useState(commercialUse[0]);
@@ -70,6 +84,10 @@ const UploadVideoModal = (props) => {
     name = e.target.name;
     value = e.target.value;
     setVideo({ ...video, [name]: value });
+  };
+
+  const handleNFT = () => {
+    setIsNFT(!isNFT);
   };
 
   const fetchSuggestions = (value) => {
@@ -137,7 +155,7 @@ const UploadVideoModal = (props) => {
     }
   };
 
-  useEffect(() => {
+  useEffect(async () => {
     setVideo({
       ...video,
       category: selectedCategory,
@@ -146,6 +164,7 @@ const UploadVideoModal = (props) => {
       derivativeWorks: selectedDerivativeWorks,
       tags: tags,
     });
+
     // eslint-disable-next-line
   }, [selectedCategory, selectedCommercialUse, selectedDerivativeWorks, selectedAttribution, tags]);
 
@@ -231,9 +250,13 @@ const UploadVideoModal = (props) => {
           .post(`${process.env.REACT_APP_SERVER_URL}/upload_video`, formData, {
             headers: {
               'content-type': 'multipart/form-data',
+              'auth-token': localStorage.getItem('authtoken'),
             },
           })
           .then(() => {
+            let url = 'https://ipfs.infura.io/ipfs/' + cid + '/meta.json';
+            console.log(url);
+            //createSale(url); uncomment for minting NFT after video's meta.json is Uploaded to IPFS
             setVideo({
               videoName: '',
               videoImage: '',
@@ -248,7 +271,6 @@ const UploadVideoModal = (props) => {
             });
             setUploading(0);
             props.setLoader(true);
-            props.handleCloseVideoUpload();
           })
           .catch((error) => {
             console.log(error);
@@ -265,17 +287,79 @@ const UploadVideoModal = (props) => {
     });
   };
 
+  // async function createSale(url) {
+  //   const biconomy = new Biconomy(window.ethereum, {
+  //     apiKey: 'YhACwSssf.8d583b5e-8b95-47da-bc08-fa7aa8df7dad',
+  //     debug: true,
+  //   });
+
+  //   const web3 = new Web3(biconomy);
+
+  //   // const connection = await web3Modal.connect();
+  //   // const provider = new ethers.providers.Web3Provider(connection);
+  //   // const signer = provider.getSigner();
+
+  //   biconomy
+  //     .onEvent(biconomy.READY, async () => {
+  //       // Initialize your dapp here like getting user accounts etc
+  //       await window.ethereum.enable();
+  //       let contract = new web3.eth.Contract(Market.abi, nftmarketaddress);
+  //       let transaction = await contract.createToken(
+  //         url,
+  //         ethers.utils.parseUnits(NFTprice, 'ether'),
+  //       );
+  //       await transaction.wait();
+  //       console.log(transaction);
+  //     })
+  //     .onEvent(biconomy.ERROR, (error, message) => {
+  //       // Handle error while initializing mexa
+  //       console.log(error);
+  //     });
+
+  //   /* next, create the item */
+  //   //let contract = new web3.eth.Contract(Market.abi, nftmarketaddress);
+  //   console.log('NFT PRICE:', ethers.utils.parseUnits(NFTprice, 'ether'));
+
+  //   //let event = tx.events[0];
+  //   //let value = event.args[2];
+  //   //let tokenId = value.toNumber();
+  //   // {
+  //   //   value: listingPrice,
+  //   // }
+  //   //transaction = await contract.createMarketItem(tokenId, price);
+  //   //await transaction.wait();
+  //   props.handleCloseVideoUpload();
+  // }
+  const customStyles = {
+    content: {
+      top: '100%',
+      left: '50%',
+      right: 'auto',
+      bottom: 'auto',
+      marginRight: '-50%',
+      height: '80vh',
+
+      transform: 'translate(-50%, -100%)',
+      background: '#181818',
+    },
+  };
   return (
     <Modal
       isOpen={props.showVideoUpload}
-      className={
-        darkMode
-          ? 'h-max lg:w-max w-5/6 mx-auto 2xl:mt-32 lg:mt-16 mt-20 bg-dbeats-dark-secondary rounded-xl'
-          : 'h-max lg:w-max w-5/6 mx-auto 2xl:mt-32 lg:mt-16 mt-20 bg-gray-50 rounded-xl shadow-2xl'
-      }
+      style={customStyles}
+
+      // className={
+      //   darkMode
+      //     ? 'h-max lg:w-max w-5/6 mx-auto 2xl:mt-32 lg:mt-16 mt-20 bg-dbeats-dark-secondary rounded-xl'
+      //     : 'h-max lg:w-max w-5/6 mx-auto 2xl:mt-32 lg:mt-16 mt-20 bg-gray-50 rounded-xl shadow-2xl'
+      // }
     >
-      <div className={`${darkMode && 'dark'} px-5 py-5 lg:px-3 lg:py-3 2xl:px-5 2xl:py-5 h-max`}>
-        <h2 className="grid grid-cols-5 justify-items-center 2xl:text-2xl text-lg 2xl:py-4 py-4 lg:py-3 dark:bg-dbeats-dark-secondary bg-white dark:text-white">
+      <div
+        className={`${
+          darkMode && 'dark'
+        } px-5 py-5 lg:px-3 lg:py-3 2xl:px-5 2xl:py-5 h-max max-w-5xl mx-auto`}
+      >
+        <h2 className="grid grid-cols-5 justify-items-center 2xl:text-2xl text-lg   dark:bg-dbeats-dark-secondary bg-white dark:text-white">
           <div className="col-span-4 pl-14 ">Upload Video</div>
           <div
             onClick={props.handleCloseVideoUpload}
@@ -289,9 +373,9 @@ const UploadVideoModal = (props) => {
             </span>
           </div>
         </h2>
-        <hr />
+
         <form method="POST" encType="multipart/formdata">
-          <div className=" bg-white text-gray-500  dark:bg-dbeats-dark-secondary dark:text-gray-100   shadow-sm rounded-lg  2xl:px-5 2xl:py-5  lg:px-2 lg:py-1 px-2 py-1 mb-5 lg:mb-2 2xl:mb-5 lg:max-h-full  max-h-96  overflow-y-auto overflow-hidden">
+          <div className=" bg-white text-gray-500  dark:bg-dbeats-dark-secondary dark:text-gray-100   shadow-sm rounded-lg  2xl:px-5    lg:px-2   px-2 py-2 mb-5 lg:mb-2 2xl:mb-5  max-h-full   overflow-y-auto overflow-hidden">
             <div className="md:grid md:grid-cols-3 md:gap-6  ">
               <div className="md:col-span-1  ">
                 <div className="lg:mt-5 mt-0 md:col-span-2 2xl:p-5 lg:p-3 p-2">
@@ -318,7 +402,7 @@ const UploadVideoModal = (props) => {
                           className="text-center relative cursor-pointer bg-white rounded-md font-medium text-dbeats-light hover:text-blue-500 focus-within:outline-none focus-within:ring-0 focus-within:ring-offset-2 focus-within:ring-blue-500"
                         >
                           <span id="video-thumbnail-label" className="truncate w-32">
-                            Choose Video Thumbnail
+                            Choose Video Thumbnail <span className="text-red-600"> *</span>
                           </span>
                           <input
                             id="file-upload3"
@@ -327,6 +411,7 @@ const UploadVideoModal = (props) => {
                             accept=".jpg,.png,.jpeg,.gif,.webp"
                             onChange={onVideoFileChange}
                             className="sr-only "
+                            required={true}
                           />
                         </label>
                         <p className="pl-1"> </p>
@@ -359,7 +444,7 @@ const UploadVideoModal = (props) => {
                           className="relative cursor-pointer bg-white rounded-md font-medium text-dbeats-light hover:text-blue-500 focus-within:outline-none focus-within:ring-0 focus-within:ring-offset-2 focus-within:ring-blue-500"
                         >
                           <p className="truncate w-32 " id="video-label">
-                            Choose Video file
+                            Choose Video file <span className="text-red-600"> *</span>
                           </p>
                           <input
                             id="file-upload4"
@@ -368,6 +453,7 @@ const UploadVideoModal = (props) => {
                             name="videoFile"
                             onChange={onVideoFileChange}
                             className="sr-only "
+                            required={true}
                           />
                         </label>
                         <p className="pl-1"></p>
@@ -381,13 +467,75 @@ const UploadVideoModal = (props) => {
               <div className="2xl:mt-5 lg:mt-1 mt-0 md:col-span-2">
                 <div className=" sm:rounded-md  ">
                   <div className="2xl:p-5 lg:p-3 p-5  space-y-6">
+                    <div className="grid grid-col-2 gap-6 ">
+                      <div className="grid lg:grid-cols-3 grid-col-1 gap-6">
+                        <div className="col-span-2  sm:col-span-1">
+                          <div className="flex   content-center items-center align-middle">
+                            <div className="flex items-center h-5">
+                              <input
+                                id="nftCheckbox"
+                                aria-describedby="nftCheckbox"
+                                type="checkbox"
+                                className="cursor-pointer w-4 h-4 bg-gray-50 rounded border border-gray-300 focus:ring-3 focus:ring-blue-300 dark:bg-gray-700 dark:border-gray-600 dark:focus:ring-blue-600 dark:ring-offset-gray-800"
+                                required
+                                checked={isNFT}
+                                onChange={handleNFT}
+                              />
+                            </div>
+                            <div className="ml-3 text-sm">
+                              <label
+                                htmlFor="nftCheckbox"
+                                className="font-medium text-gray-900 dark:text-gray-300"
+                              >
+                                Mint NFT
+                              </label>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                     <div className="grid grid-cols-1 gap-6 sm:grid-cols-1">
+                      {isNFT ? (
+                        <>
+                          <div className="grid lg:grid-cols-3 grid-col-6 gap-6 ">
+                            <div className="col-span-2  sm:col-span-1 ">
+                              <label
+                                htmlFor="company-website"
+                                className="block 2xl:text-sm text-sm lg:text-xs font-medium dark:text-gray-100 text-gray-700"
+                              >
+                                Price in MATIC
+                              </label>
+                              <div className="mt-1 flex rounded-md shadow-sm nm-flat-dbeats-dark-secondary  p-0.5">
+                                <input
+                                  min={0.001}
+                                  type="number"
+                                  name="NFTPrice"
+                                  id="NFTPrice"
+                                  value={NFTprice}
+                                  onChange={(e) => setPrice(e.target.value)}
+                                  className="focus:nm-inset-dbeats-dark-primary  border-0 bg-dbeats-dark-primary  ring-0   flex-1 block w-full rounded-md sm:text-sm  "
+                                  placeholder=""
+                                />
+                              </div>
+                            </div>
+                          </div>
+                          <div className=" col-span-6  align-middle md:flex">
+                            <p className="text-xs   text-dbeats-white opacity-40 ">
+                              Royalty of 10% on secondary sales will be sent to &nbsp;{' '}
+                            </p>
+                            <span className="text-xs  font-medium   text-dbeats-white opacity-100 justify-center align-middle">
+                              {' '}
+                              {user.wallet_id}
+                            </span>
+                          </div>
+                        </>
+                      ) : null}
                       <div className="col-span-1 sm:col-span-1">
                         <label
                           htmlFor="videoName"
                           className="block 2xl:text-sm text-sm lg:text-xs font-medium dark:text-gray-100 text-gray-700 "
                         >
-                          Video Title
+                          Video Title <span className="text-red-600"> *</span>
                         </label>
                         <div className="mt-1 flex rounded-md shadow-sm nm-flat-dbeats-dark-secondary  p-0.5">
                           <input
@@ -398,6 +546,7 @@ const UploadVideoModal = (props) => {
                             onChange={handleVideoInputs}
                             className="focus:nm-inset-dbeats-dark-primary  border-0 bg-dbeats-dark-primary  ring-0   flex-1 block w-full rounded-md sm:text-sm  "
                             placeholder=""
+                            required={true}
                           />
                         </div>
                       </div>
@@ -462,7 +611,7 @@ const UploadVideoModal = (props) => {
                       </div>
                     </div>
 
-                    <div className="grid grid-col-2 gap-6 2xl:pb-20">
+                    <div className="grid grid-col-2 gap-6  ">
                       <div className="grid lg:grid-cols-3 grid-col-1 gap-6">
                         <div className="col-span-2  sm:col-span-1">
                           <label
@@ -523,7 +672,7 @@ const UploadVideoModal = (props) => {
             <div className=" mx-5 flex items-center w-64">
               <input
                 type="range"
-                value={uploading}
+                defaultValue={uploading}
                 min="0"
                 max="10"
                 hidden={props.loader}
@@ -538,13 +687,13 @@ const UploadVideoModal = (props) => {
             <input
               type="submit"
               onClick={PostData}
-              value="Upload Video"
+              defaultValue="Upload Video"
               className={`${
                 videoUpload && videoImageUpload ? 'cursor-pointer hover:bg-dbeats-light' : ''
               } 
                flex justify-center 2xl:py-2 py-1 lg:px-5 
                 px-3 2xl:text-lg rounded  border-dbeats-light border
-                lg:text-md text-md my-auto font-semibold px-3 bg-transparent
+                lg:text-md text-md my-auto font-semibold  bg-transparent
                 dark:text-white `}
               disabled={!videoUpload || !videoImageUpload}
             ></input>

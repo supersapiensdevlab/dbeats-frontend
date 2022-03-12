@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import axios from 'axios';
+import Web3 from 'web3';
 
 const SignupForm = ({
   loader,
@@ -21,6 +22,7 @@ const SignupForm = ({
   const [showPassword, setShowPassword] = useState(true);
   const seePass = useRef();
   const bcrypt = require('bcryptjs');
+  const [account, setAccount] = useState();
 
   const handleNameChange = (e) => {
     setName(e.target.value);
@@ -65,7 +67,12 @@ const SignupForm = ({
 
     let walletId = '';
     if (provider) {
-      walletId = provider.provider.selectedAddress;
+      let variable = await loadWeb3Modal();
+
+      const web3 = new Web3(variable);
+      const accounts = await web3.eth.getAccounts();
+      setAccount(accounts[0]);
+      walletId = account;
     }
 
     let password = await bcrypt.hash(form_password, 10);
@@ -87,7 +94,8 @@ const SignupForm = ({
         if (response.data === 'Email' || response.data === 'Username') {
           setExistingValue(response.data);
         } else {
-          window.localStorage.setItem('user', JSON.stringify(response.data));
+          window.localStorage.setItem('user', JSON.stringify(response.data.user));
+          window.localStorage.setItem('authtoken', JSON.stringify(response.data.jwtToken));
           window.location.href = '/';
         }
       })
@@ -168,19 +176,17 @@ const SignupForm = ({
 
           <div onClick={handleSeePassword} className="flex items-center">
             <div className="cursor-pointer absolute -ml-8 self-center dark:text-white">
-              {showPassword ? <i class="far fa-eye-slash"></i> : <i class="fas fa-eye"></i>}
+              {showPassword ? <i className="far fa-eye-slash"></i> : <i className="fas fa-eye"></i>}
             </div>
           </div>
         </div>
 
         <div
-          className={`flex justify-center 2xl:mt-6 lg:mt-3 mt-3 mb-2  text-yellow-600 
-            border border-yellow-600 bg-white dark:bg-dbeats-dark-secondary rounded 
+          className={`flex justify-center 2xl:mt-6 lg:mt-3 mt-3 mb-2   
             ${
               !provider
-                ? `transform transition-all hover:scale-99
-                    dark:hover:bg-yellow-600 hover:bg-yellow-600 
-                    dark:hover:bg-opacity-5 hover:bg-opacity-5`
+                ? `transform transition-all 
+                      `
                 : ''
             }  
             mx-3 py-1 2xl:text-lg lg:text-sm`}
@@ -196,7 +202,7 @@ const SignupForm = ({
         <div className="flex justify-center">
           <button
             className={`${
-              !(provider && provider.provider.selectedAddress) ||
+              (!provider && account) ||
               form_name === '' ||
               form_username === '' ||
               form_password === '' ||
@@ -206,7 +212,7 @@ const SignupForm = ({
             }`}
             onClick={createStream}
             disabled={
-              !(provider && provider.provider.selectedAddress) ||
+              (!provider && account) ||
               form_name === '' ||
               form_username === '' ||
               form_password === '' ||

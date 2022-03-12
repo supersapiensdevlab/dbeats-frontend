@@ -6,15 +6,29 @@ import CreatorDashboard from '../../../../pages/Profile/ProfileSections/Store/cr
 const UploadNFTModal = (props) => {
   const darkMode = useSelector((state) => state.toggleDarkMode);
 
+  const customStyles = {
+    content: {
+      top: '50%',
+      left: '50%',
+      right: 'auto',
+      bottom: 'auto',
+      marginRight: '-50%',
+      transform: 'translate(-50%, -50%)',
+      background: '#181818',
+    },
+  };
+
   return (
     <div className={`${darkMode && 'dark'} border-0 ring-0`}>
       <Modal
         isOpen={props.showNFTUpload}
-        className={
-          darkMode
-            ? 'h-max lg:w-max w-96 mx-auto 2xl:mt-32 lg:mt-16 mt-20 bg-dbeats-dark-alt rounded-xl border-0 ring-0'
-            : 'h-max lg:w-max   mx-auto 2xl:mt-32 lg:mt-16 mt-20 bg-gray-50 rounded-xl shadow-2xl'
-        }
+        style={customStyles}
+
+        // className={
+        //   darkMode
+        //     ? 'h-max lg:w-max w-96 mx-auto 2xl:mt-32 lg:mt-16 mt-20 bg-dbeats-dark-alt rounded-xl border-0 ring-0'
+        //     : 'h-max lg:w-max   mx-auto 2xl:mt-32 lg:mt-16 mt-20 bg-gray-50 rounded-xl shadow-2xl'
+        // }
       >
         <h2 className="grid grid-cols-5 justify-items-center 2xl:text-2xl text-lg  pt-10 align-middle  bg-transparent  text-white">
           <div className="col-span-4 pl-14">Sell Digital Art</div>

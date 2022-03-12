@@ -3,15 +3,19 @@ import './chatroom.css';
 import io from 'socket.io-client';
 import Picker from 'emoji-picker-react';
 import person from '../../../../assets/images/profile.svg';
-import { makeStorageClient } from '../../../../component/uploadHelperFunction';
+import { detectURLs, makeStorageClient } from '../../../../component/uploadHelperFunction';
 import prettyBytes from 'pretty-bytes';
 import ReactAudioPlayer from 'react-audio-player';
+import LoadingBar from 'react-top-loading-bar';
+import ChatLinkPreview from './ChatLinkPreview';
+import InfiniteScroll from 'react-infinite-scroller';
 
 function ChatRoom(props) {
   // to get loggedin user from   localstorage
   const user = JSON.parse(window.localStorage.getItem('user'));
 
   const chatRef = useRef(null);
+  const loadingRef = useRef(null);
   // the form state manages the form input for creating a new message
   const [formState, setForm] = useState({
     message: '',
@@ -23,26 +27,73 @@ function ChatRoom(props) {
   const videoInput = useRef();
   const fileInput = useRef();
 
+  // For reply click ref
+  const scrollTop = useRef(null);
+  const messageRef = useRef([]);
+  const [goToMessage, setGoToMessage] = useState(false);
+  function scrollTo(id) {
+    setGoToMessage(id);
+  }
+
   const [messages, setMessages] = useState([]);
+  useEffect(() => {
+    if (goToMessage) {
+      if (messageRef.current[goToMessage]) {
+        console.log('scrolling to ' + goToMessage);
+        messageRef.current[goToMessage].scrollIntoView();
+        setGoToMessage(false);
+      } else {
+        console.log('loading chats ');
+        scrollTop.current.scrollIntoView();
+      }
+    }
+    console.log('out of ifs');
+  }, [messages, goToMessage]);
   const [currentSocket, setCurrentSocket] = useState(null);
   const dates = new Set();
   const [selectedFile, setSelectedFile] = useState(null);
   const [showEmojis, setShowEmojis] = useState(false);
   const [showAttachmentDropdown, setShowAttachmentDropdown] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
+
+  // Smart Links
+  const [showLinkPreview, setShowLinkPreview] = useState(false);
+  const [linkPreviewData, setLinkPreviewData] = useState(null);
+
+  // For Pagination
+  const [totalPages, setTotalpages] = useState(0);
+  const [currentPage, setCurrentpage] = useState(0);
+  const [loadingOldChats, setLoadingOldChats] = useState(false);
+
   const onEmojiClick = (event, emojiObject) => {
     setForm({ ...formState, message: formState.message + emojiObject.emoji });
   };
   useEffect(() => {
     // initialize gun locally
     if (user) {
+      loadingRef.current.continuousStart();
       // https://dbeats-chat.herokuapp.com
       const socket = io('https://dbeats-chat.herokuapp.com');
       setCurrentSocket(socket);
       socket.emit('joinroom', { user_id: user._id, room_id: props.userp._id });
       socket.on('init', (msgs) => {
-        setMessages(msgs);
-        chatRef.current.scrollIntoView({ behavior: 'smooth' });
+        loadingRef.current.complete();
+        setMessages(msgs.chats);
+        setTotalpages(msgs.totalPages);
+        setCurrentpage(msgs.currentPage);
+        setTimeout(() => {
+          chatRef.current.scrollIntoView({ behavior: 'smooth', block: 'end', inline: 'nearest' });
+        }, 1000);
+      });
+      socket.on('getmore', (msgs) => {
+        // loadingRef.current.complete();
+        setMessages((prevArray) => [...msgs.chats, ...prevArray]);
+        setTotalpages(msgs.totalPages);
+        setCurrentpage(msgs.currentPage);
+        setLoadingOldChats(false);
+        // setTimeout(() => {
+        //   chatRef.current.scrollIntoView({ behavior: 'smooth' });
+        // }, 1500);
       });
       socket.on('message', (msg) => {
         setMessages((prevArray) => [...prevArray, msg]);
@@ -51,6 +102,9 @@ function ChatRoom(props) {
     } else {
       window.history.replaceState({}, 'Home', '/');
     }
+    return () => {
+      currentSocket.disconnect();
+    };
     // eslint-disable-next-line
   }, []);
 
@@ -67,8 +121,6 @@ function ChatRoom(props) {
             room_admin: props.userp._id,
             chat: {
               user_id: user._id,
-              username: user.username,
-              profile_image: user.profile_image,
               type: selectedFile.type,
               message: formState.message,
               createdAt: Date.now(),
@@ -175,153 +227,253 @@ function ChatRoom(props) {
     return client.put(file, { onRootCidReady, onStoredChunk });
   }
 
+  // FOr Links
+  // use whatever you want here
+  const URL_REGEX =
+    /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\\+.~#?&//=]*)/;
+  const renderText = (txt) =>
+    txt.split(' ').map((part) => (URL_REGEX.test(part) ? <a href={part}>{part} </a> : part + ' '));
+
   return (
-    <div className="text-gray-400	 box-border px-2 h-max lg:col-span-5 col-span-6 w-full pt-16 dark:bg-dbeats-dark-primary">
-      <div className="overflow-hidden">
-        <main className="chat-container-height sticky bottom-0">
-          <div className="p-2 chat-height overflow-y-scroll	">
-            {messages
-              ? messages.map((message) => {
-                  const dateNum = new Date(message.createdAt);
-                  let size = 0;
-                  return (
-                    <div key={message._id}>
-                      {dates.has(dateNum.toDateString()) ? null : (
-                        <p className="my-1 rounded-3xl bg-dbeats-dark-secondary px-3 py-1 block w-max mx-auto">
-                          {renderDate(message, dateNum.toDateString())}
-                        </p>
-                      )}
-                      <div className=" px-3 p-2 rounded	 dark: bg-dbeats-dark-secondary	my-1 inline-block shadow">
-                        {message.reply_to ? (
-                          <div className="group  px-3 py-2 border-l-2 border-dbeats-light  dark: nm-inset-dbeats-dark-primary">
-                            <p
-                              className={
-                                message.reply_to.username === user.username
-                                  ? 'text-sm  mb-1  text-dbeats-light'
-                                  : 'text-sm  mb-1 text-white	'
-                              }
+    <div className="text-gray-400 	 box-border px-2 h-max lg:col-span-5 col-span-6 w-full dark:bg-dbeats-dark-primary">
+      <LoadingBar ref={loadingRef} color="#00d3ff" shadow={true} />
+      <div className="full-height">
+        <main className=" pt-16 chat-container-height sticky bottom-0">
+          <div className="    p-2 chat-height overflow-y-scroll	overflow-x-hidden">
+            <div ref={scrollTop}></div>
+            <InfiniteScroll
+              pageStart={0}
+              loadMore={() => {
+                if (currentSocket && currentPage > 0 && !loadingOldChats) {
+                  setLoadingOldChats(true);
+                  currentSocket.emit('loadmore', {
+                    user_id: user._id,
+                    room_id: props.userp._id,
+                    page_no: currentPage - 1,
+                  });
+                }
+              }}
+              hasMore={currentPage > 0}
+              loader={
+                <div className="flex justify-center">
+                  <div className="text-center animate-spin rounded-full h-7 w-7 ml-3 border-t-2 border-b-2 bg-gradient-to-r from-green-400 to-blue-500 "></div>
+                </div>
+              }
+              useWindow={false}
+              isReverse={true}
+            >
+              {messages
+                ? messages.map((message, index) => {
+                    const dateNum = new Date(message.createdAt);
+                    let size = 0;
+                    let urls = detectURLs(message.message);
+                    let urlstext = renderText(message.message);
+                    return (
+                      <div key={message._id} ref={(el) => (messageRef.current[message._id] = el)}>
+                        {dates.has(dateNum.toDateString()) ? null : (
+                          <p className="my-1 rounded-3xl bg-dbeats-dark-secondary px-3 py-1 block w-max mx-auto">
+                            {renderDate(message, dateNum.toDateString())}
+                          </p>
+                        )}
+                        <div className=" px-3 p-2 rounded	 dark: bg-dbeats-dark-secondary	my-1 inline-block shadow">
+                          {message.reply_to ? (
+                            <div
+                              onClick={() => scrollTo(message.reply_to._id)}
+                              className="cursor-pointer flex justify-between items-center group  px-3 py-2 border-l-2 border-dbeats-light  dark: nm-inset-dbeats-dark-primary"
                             >
-                              {' '}
-                              {message.reply_to.username}
-                            </p>
-                            <p className="text-xs">{message.reply_to.message}</p>
-                          </div>
-                        ) : null}
-                        {message.type == 'image' ? (
-                          <div className="w-250">
-                            <img src={message.url}></img>
-                            <p className="text-gray-400 text-xs">{message.url.split('/').pop()}</p>
-                            <p className="text-gray-400 text-xs">Size: {prettyBytes(size)}</p>
-                            <a
-                              className="text-opacity-25 text-white hover:text-opacity-100 "
-                              href={message.url}
-                              download
-                              target="_blank"
-                            >
-                              Download
-                            </a>
-                          </div>
-                        ) : null}
-                        {message.type == 'sound' ? (
-                          <div className=" md:ml-3 p-2 border border-dbeats-light rounded-md">
-                            <div className="md:flex items-center">
-                              <i className="fas fa-music text-4xl text-dbeats-light"></i>
-                              {/* <AudioPlayer
-                                autoPlay={false}
-                                src={message.url}
-                                onPlay={(e) => console.log('onPlay')}
-                                // other props here
-                                style={{}}
-                              /> */}
-                              <ReactAudioPlayer
-                                className="w-full md:w-44"
-                                src={message.url}
-                                controls
+                              <div className="">
+                                <p
+                                  className={
+                                    message.reply_to.username === user.username
+                                      ? 'text-sm  mb-1  text-dbeats-light'
+                                      : 'text-sm  mb-1 text-white	'
+                                  }
+                                >
+                                  {' '}
+                                  {message.reply_to.username}
+                                </p>
+                                <p className="text-xs">{message.reply_to.message}</p>
+                              </div>
+                              <div className="p-2">
+                                {message.reply_to.type == 'image' && (
+                                  <i className="fas fa-image text-2xl text-dbeats-light"></i>
+                                )}
+                                {message.reply_to.type == 'sound' && (
+                                  <i className="fas fa-music text-2xl text-dbeats-light"></i>
+                                )}
+                                {message.reply_to.type == 'video' && (
+                                  <i className="fas fa-video text-2xl text-dbeats-light"></i>
+                                )}
+                                {message.reply_to.type == 'file' && (
+                                  <i className="fas fa-file text-2xl text-dbeats-light"></i>
+                                )}
+                              </div>
+                            </div>
+                          ) : null}
+                          {message.type == 'image' ? (
+                            <div className="w-250">
+                              <img src={message.url}></img>
+                              <p className="text-gray-400 text-xs">
+                                {message.url.split('/').pop()}
+                              </p>
+                              <p className="text-gray-400 text-xs">Size: {prettyBytes(size)}</p>
+                              <a
+                                className="text-opacity-25 text-white hover:text-opacity-100 "
+                                href={message.url}
+                                download
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                Download
+                              </a>
+                            </div>
+                          ) : null}
+                          {message.type == 'sound' ? (
+                            <div className=" md:ml-3 p-2 border border-dbeats-light rounded-md">
+                              <div className="md:flex items-center">
+                                <i className="fas fa-music text-4xl text-dbeats-light"></i>
+                                <ReactAudioPlayer
+                                  className="w-full md:w-44"
+                                  src={message.url}
+                                  controls
+                                />
+                              </div>
+                              <p className="text-gray-400 text-xs">
+                                {message.url.split('/').pop()}
+                              </p>
+                              <p className="text-gray-400 text-xs">Size: {prettyBytes(size)}</p>
+                              <p className="text-gray-400 text-xs">
+                                <a
+                                  href={message.url}
+                                  download
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
+                                  Download
+                                </a>
+                              </p>
+                            </div>
+                          ) : null}
+                          {message.type == 'video' ? (
+                            <div className="w-250 ml-3 p-2 border border-dbeats-light rounded-md">
+                              <i className="fas fa-video text-4xl text-dbeats-light"></i>
+                              <p className="text-gray-400 text-xs">
+                                {message.url.split('/').pop()}
+                              </p>
+                              <p className="text-gray-400 text-xs">Size: {prettyBytes(size)}</p>
+                              <p className="text-gray-400 text-xs">
+                                <a
+                                  href={message.url}
+                                  download
+                                  rel="noopener noreferrer"
+                                  target="_blank"
+                                >
+                                  Download
+                                </a>
+                              </p>
+                            </div>
+                          ) : null}
+                          {message.type == 'file' ? (
+                            <div className="w-250 ml-3 p-2 border border-dbeats-light rounded-md">
+                              <i className="fas fa-file text-4xl text-dbeats-light"></i>
+                              <p className="text-gray-400 text-xs">
+                                {message.url.split('/').pop()}
+                              </p>
+                              <p className="text-gray-400 text-xs">Size: {prettyBytes(size)}</p>
+                              <p className="text-gray-400 text-xs">
+                                <a
+                                  href={message.url}
+                                  download
+                                  rel="noopener noreferrer"
+                                  target="_blank"
+                                >
+                                  Download
+                                </a>
+                              </p>
+                            </div>
+                          ) : null}
+                          <div className="inline-flex items-start group">
+                            <div className="chat_message_profile pr-2 pt-2 h-12 w-12">
+                              <img
+                                height="50px"
+                                width="50px"
+                                className="rounded-full"
+                                style={{ width: 'auto', maxWidth: '50px' }}
+                                alt="profile"
+                                src={message.profile_image ? message.profile_image : person}
                               />
                             </div>
-                            <p className="text-gray-400 text-xs">{message.url.split('/').pop()}</p>
-                            <p className="text-gray-400 text-xs">Size: {prettyBytes(size)}</p>
-                            <p className="text-gray-400 text-xs">
-                              <a href={message.url} download target="_blank">
-                                Download
-                              </a>
-                            </p>
-                          </div>
-                        ) : null}
-                        {message.type == 'video' ? (
-                          <div className="w-250 ml-3 p-2 border border-dbeats-light rounded-md">
-                            <i className="fas fa-video text-4xl text-dbeats-light"></i>
-                            <p className="text-gray-400 text-xs">{message.url.split('/').pop()}</p>
-                            <p className="text-gray-400 text-xs">Size: {prettyBytes(size)}</p>
-                            <p className="text-gray-400 text-xs">
-                              <a href={message.url} download target="_blank">
-                                Download
-                              </a>
-                            </p>
-                          </div>
-                        ) : null}
-                        {message.type == 'file' ? (
-                          <div className="w-250 ml-3 p-2 border border-dbeats-light rounded-md">
-                            <i className="fas fa-file text-4xl text-dbeats-light"></i>
-                            <p className="text-gray-400 text-xs">{message.url.split('/').pop()}</p>
-                            <p className="text-gray-400 text-xs">Size: {prettyBytes(size)}</p>
-                            <p className="text-gray-400 text-xs">
-                              <a href={message.url} download target="_blank">
-                                Download
-                              </a>
-                            </p>
-                          </div>
-                        ) : null}
-                        <div className="inline-flex items-center group">
-                          <div className="chat_message_profile pr-2 h-12 w-12">
-                            <img
-                              height="50px"
-                              width="50px"
-                              className="rounded-full"
-                              style={{ width: 'auto', maxWidth: '50px' }}
-                              alt="profile"
-                              src={message.profile_image ? message.profile_image : person}
-                            />
-                          </div>
-                          <div className="p-1 mt-1">
-                            <p
-                              className={
-                                message.username === user.username
-                                  ? 'text-base font-bold   text-dbeats-light'
-                                  : 'text-base font-bold  text-white	'
-                              }
-                            >
-                              {message.username}{' '}
-                              {message.type == 'live' ? (
-                                <span className="text-white bg-red-500 rounded-md font-normal px-2 mx-1 text-sm">
-                                  LIVE
+                            <div className="p-1 mt-1">
+                              <p
+                                className={
+                                  message.username === user.username
+                                    ? 'text-base font-bold   text-dbeats-light'
+                                    : 'text-base font-bold  text-white	'
+                                }
+                              >
+                                {message.username}{' '}
+                                {message.type == 'live' ? (
+                                  <span className="text-white bg-red-500 rounded-md font-normal px-2 mx-1 text-sm">
+                                    LIVE
+                                  </span>
+                                ) : null}
+                                <span className="text-xs text-gray-300 font-light">
+                                  {new Date(message.createdAt).toLocaleString('en-US', {
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                    hour12: true,
+                                  })}
                                 </span>
+                              </p>
+                              <p className="text whitespace-pre-line">{urlstext}</p>
+                              {message.type == 'live' ? (
+                                <a
+                                  href={`https://dbeats.live/live/${props.userp.username}`}
+                                  target="__blank"
+                                >
+                                  {message.url ? (
+                                    <img
+                                      src={message.url}
+                                      className="w-full max-h-96 max-w-sm"
+                                    ></img>
+                                  ) : (
+                                    <h1 className="text-center text-4xl font-bold text-dbeats-light">
+                                      I am Live
+                                    </h1>
+                                  )}
+                                </a>
                               ) : null}
-                              <span className="text-xs text-gray-300 font-light">
-                                {new Date(message.createdAt).toLocaleString('en-US', {
-                                  hour: '2-digit',
-                                  minute: '2-digit',
-                                  hour12: true,
+
+                              {urls &&
+                                urls.map((u, index) => {
+                                  return (
+                                    <a href={u} key={index}>
+                                      <ChatLinkPreview
+                                        linkurl={u}
+                                        setShowLinkPreview={setShowLinkPreview}
+                                        setLinkPreviewData={setLinkPreviewData}
+                                      />
+                                    </a>
+                                  );
                                 })}
-                              </span>
-                            </p>
-                            <p className="text">{message.message}</p>
-                            {message.type == 'live' ? (
-                              <a href={`https://dbeats.live/live/${props.userp.username}`}  target="__blank">
-                              {message.url?(<img src={message.url} className='w-full max-h-96 max-w-sm'></img>):(<h1 className='text-center text-4xl font-bold text-dbeats-light'>I am Live</h1>)}
-                            </a>
-                            ) : null}
+                            </div>
+                            <i
+                              onClick={() => onreply(message)}
+                              className="pt-8  opacity-0 group-hover:opacity-100 fas fa-reply ml-2 w-4 h-4 cursor-pointer text-dbeats-white text-opacity-40 hover:text-opacity-100"
+                            ></i>
                           </div>
-                          <i
-                            onClick={() => onreply(message)}
-                            className=" opacity-0 group-hover:opacity-100 fas fa-reply ml-2 w-4 h-4 cursor-pointer text-dbeats-white text-opacity-40 hover:text-opacity-100"
-                          ></i>
                         </div>
                       </div>
-                    </div>
-                  );
-                })
-              : '<></>'}
+                    );
+                  })
+                : '<></>'}
+            </InfiniteScroll>
+            <i
+              onClick={() => {
+                chatRef.current.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="fas fa-angle-double-down text-xl text-dbeats-light fixed right-4 bottom-24 px-4 py-2 rounded-full bg-dbeats-dark-secondary xl:text-2xl xl:right-8 cursor-pointer"
+            ></i>
             <div ref={chatRef} />
           </div>
         </main>
@@ -400,7 +552,7 @@ function ChatRoom(props) {
           </div>
         )}
 
-        <div className="py-4 md:px-4 rounded-lg bg-dbeats-dark-secondary shadow-md">
+        <div className="chat-input-height py-4 md:px-4 rounded-lg bg-dbeats-dark-secondary shadow-md">
           {formState.replyto ? (
             <div className="px-3 p-2 flex items-center	justify-between rounded-xl dark: bg-dbeats-dark-secondary	mb-2">
               <div className="flex">
@@ -509,17 +661,18 @@ function ChatRoom(props) {
             <form className="flex flex-grow" id="chat-form" onSubmit={saveMessage}>
               <div className="flex-grow rounded-md group w-fit  p-1  mx-1  cursor-pointer bg-gradient-to-br from-dbeats-dark-alt to-dbeats-dark-primary  nm-flat-dbeats-dark-secondary   hover:nm-inset-dbeats-dark-primary           font-medium          transform-gpu  transition-all duration-300 ease-in-out ">
                 {' '}
-                <input
+                <textarea
                   onChange={onChange}
                   value={formState.message}
                   id="msg"
+                  rows={1}
                   name="message"
                   type="text"
                   placeholder="Enter Message"
                   required
                   autoComplete="false"
                   className="w-full rounded-md border-0 ring-0 focus:ring-0 focus:border-0 text-black dark:text-white md:px-4 p-2  bg-gradient-to-br from-dbeats-dark-secondary to-dbeats-dark-primary group-hover:nm-inset-dbeats-dark-secondary focus:nm-inset-dbeats-dark-primary placeholder-white placeholder-opacity-25"
-                ></input>
+                ></textarea>
               </div>
 
               <div

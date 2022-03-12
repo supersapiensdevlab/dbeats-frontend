@@ -3,34 +3,47 @@ import { Menu, Transition } from '@headlessui/react';
 import SuperfluidSDK from '@superfluid-finance/js-sdk';
 //import playimg from "../../../assets/images/telegram.png";
 import axios from 'axios';
+import moment from 'moment';
 import React, { Fragment, useEffect, useState } from 'react';
-import Modal from 'react-awesome-modal';
-import { Container, Row } from 'react-bootstrap';
-import Lottie from 'react-lottie';
+// import Modal from 'react-awesome-modal';
+// import { Container, Row } from 'react-bootstrap';
+// import Lottie from 'react-lottie';
 import { useSelector } from 'react-redux';
+import { useLocation } from 'react-router-dom';
 import { Link } from 'react-router-dom';
-import superfluid from '../../../../assets/images/superfluid-black.svg';
+import person from '../../../../assets/images/profile.svg';
+// import superfluid from '../../../../assets/images/superfluid-black.svg';
 import { ShareModal } from '../../../../component/Modals/ShareModal/ShareModal';
 import SuperfanModal from '../../../../component/Modals/SuperfanModal/superfan-modal';
-
 import VideoPlayer from '../../../../component/VideoPlayer/VideoPlayer';
-import animationDataConfetti from '../../../../lotties/confetti.json';
-import animationData from '../../../../lotties/fans.json';
-import animationDataGiraffee from '../../../../lotties/giraffee.json';
-import classes from '../Info.module.css';
-import LiveCard from './LiveCard';
+// import animationDataConfetti from '../../../../lotties/confetti.json';
+// import animationData from '../../../../lotties/fans.json';
+// import animationDataGiraffee from '../../../../lotties/giraffee.json';
+// import ChatRoom from '../../../Profile/ProfileSections/ChatRoom/ChatRoom';
+// import classes from '../Info.module.css';
+// import LiveCard from './LiveCard';
+import LiveChat from './LiveChat';
+import { io } from 'socket.io-client';
 
 const PublicInfo = (props) => {
-  let sharable_data = `${process.env.REACT_APP_SERVER_URL}/live/${props.stream_id}`;
+  // const socket = io('http://localhost:800');
+  const location = useLocation();
+  console.log(location);
+  console.log(props);
+
+  let sharable_data = `${process.env.REACT_APP_CLIENT_URL}/live/${props.stream_id}`;
   const darkMode = useSelector((darkmode) => darkmode.toggleDarkMode);
 
-  const [userData, setUserData] = useState([]);
+  const [userData, setUserData] = useState({});
 
   const [privateUser, setPrivate] = useState(true);
 
   const user = JSON.parse(window.localStorage.getItem('user'));
+  const [time, setTime] = useState(null);
 
   const [playbackUrl, setPlaybackUrl] = useState('');
+
+  const [livestreamViews, setLivestreamViews] = useState(0);
 
   const [showSubscriptionModal, setshowSubscriptionModal] = useState(false);
   const handleCloseSubscriptionModal = () => setshowSubscriptionModal(false);
@@ -44,6 +57,10 @@ const PublicInfo = (props) => {
   const [buttonText, setButtonText] = useState(text);
   const [subscribeButtonText, setSubscribeButtonText] = useState('Subscribe');
 
+  const [viewColor, setViewColor] = useState('white');
+  const [viewAnimate, setViewAnimate] = useState('animate-none');
+
+  // eslint-disable-next-line no-unused-vars
   const [arrayData, setArrayData] = useState([]);
 
   const trackFollowers = () => {
@@ -51,6 +68,7 @@ const PublicInfo = (props) => {
       following: `${userData.username}`,
       follower: `${user.username}`,
     };
+
     if (subscribeButtonText === 'Subscribe') {
       setSubscribeButtonText('Unsubscribe');
       axios({
@@ -58,7 +76,7 @@ const PublicInfo = (props) => {
         url: `${process.env.REACT_APP_SERVER_URL}/user/follow`,
         headers: {
           'content-type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
+          'auth-token': localStorage.getItem('authtoken'),
         },
         data: followData,
       })
@@ -79,7 +97,7 @@ const PublicInfo = (props) => {
         url: `${process.env.REACT_APP_SERVER_URL}/user/unfollow`,
         headers: {
           'content-type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
+          'auth-token': localStorage.getItem('authtoken'),
         },
         data: followData,
       })
@@ -135,12 +153,64 @@ const PublicInfo = (props) => {
     get_User();
     fetchData();
     let value = JSON.parse(window.localStorage.getItem('user'));
+    console.log(userData);
+    console.log(user);
     if (user ? value.username === props.stream_id : false) {
       setPrivate(true);
     } else {
       setPrivate(false);
     }
+
+    if (props.playbackUserData) {
+      let videotime = props.playbackUserData.time;
+      const timestamp = new Date(videotime * 1000); // This would be the timestamp you want to format
+      setTime(moment(timestamp).fromNow());
+    }
     // eslint-disable-next-line
+  }, []);
+
+  useEffect(() => {
+    const socket = io(process.env.REACT_APP_VIEWS_URL, {
+      transports: ['websocket'],
+      upgrade: false,
+    });
+    socket.on('connection');
+    socket.emit('joinlivestream', props.stream_id);
+    socket.on('count', (details) => {
+      if (details.room === props.stream_id) {
+        setLivestreamViews(details.roomSize);
+      }
+    });
+    socket.on('livecount', (details) => {
+      setLivestreamViews(details.roomSize);
+      // console.log('emitted');
+      // console.log('inc', livestreamViews);
+      setViewColor('green-500');
+      setViewAnimate('animate-pulse');
+      setTimeout(() => {
+        setViewColor('white');
+        setViewAnimate('animate-none');
+      }, 3000);
+    });
+    socket.on('removecount', (roomSize) => {
+      setLivestreamViews(roomSize);
+      // console.log('removecount emitted');
+      // console.log('dec', livestreamViews);
+      setViewColor('red-500');
+      setViewAnimate('animate-pulse');
+      setTimeout(() => {
+        setViewColor('white');
+        setViewAnimate('animate-none');
+      }, 3000);
+    });
+    // socket
+    //   .off('count', (data) => {
+    //     console.log(data);
+    //   })
+    //   .on('count', (data) => {
+    //     console.log(data.num);
+    //     setLivestreamViews(data.num);
+    //   });
   }, []);
 
   const testFlow = async (amount) => {
@@ -174,13 +244,13 @@ const PublicInfo = (props) => {
     //console.log(details.cfa.flows.outFlows[0]);
   };
   return (
-    <div className="mt-10">
+    <div className="">
       <div
         className={`${
           darkMode && 'dark'
-        }  grid sm:grid-cols-1 lg:grid-cols-3 grid-flow-row pt-3 pb-50 mt-10 lg:ml-12  bg-gradient-to-b from-blue-50 via-blue-50 to-white  dark:bg-gradient-to-b dark:from-dbeats-dark-secondary  dark:to-dbeats-dark-primary`}
+        }  grid sm:grid-cols-1 lg:grid-cols-3 grid-flow-row  pb-50  lg:ml-12  bg-gradient-to-b from-blue-50 via-blue-50 to-white  dark:bg-gradient-to-b dark:from-dbeats-dark-secondary  dark:to-dbeats-dark-primary`}
       >
-        <div className=" lg:col-span-2">
+        <div className=" lg:col-span-2 pt-3 mt-10">
           <div className="self-center lg:px-8 w-screen lg:w-full lg:mt-3 mt-0.5  ">
             {userData ? (
               <VideoPlayer playbackUrl={playbackUrl} creatorData={userData} footer={true} />
@@ -202,44 +272,118 @@ const PublicInfo = (props) => {
                 </div>
                 {!privateUser ? (
                   <div>
-                    {user ? (
-                      <div className="flex items-center   w-full">
-                        <button
-                          className="flex items-center dark:bg-dbeats-dark-primary border border-dbeats-light dark:hover:bg-dbeats-light p-1 2xl:text-lg lg:text-sm text-md rounded-sm 2xl:px-4 px-4 lg:px-2 mr-3 font-semibold text-white "
-                          onClick={trackFollowers}
-                        >
-                          <span>{subscribeButtonText}</span>
-                          {/* <div
+                    {user && userData ? (
+                      <>
+                        {' '}
+                        <div className="flex   text-black text-sm font-medium   px-4  py-3">
+                          <Link to={`/profile/${userData.username}/`} className="mr-4">
+                            <img
+                              src={userData.profile_image ? userData.profile_image : person}
+                              alt=""
+                              className="  w-16 h-14    rounded-full    self-start"
+                            />
+                          </Link>
+                          <div className="w-full flex  justify-between mt-2">
+                            <div>
+                              <div className="w-full self-center  ">
+                                <Link
+                                  to={`/profile/${userData.username}/`}
+                                  className="2xl:text-sm lg:text-xs text-sm text-gray-500  mb-2"
+                                >
+                                  <div className="flex align-middle">
+                                    <h3 className="text-white mr-1 text-lg tracking-wider">
+                                      {userData.name}
+                                    </h3>
+
+                                    <p className="text-white ml-1 text-opacity-40 text-xs self-center align-middle">
+                                      {time}
+                                    </p>
+                                  </div>
+
+                                  <p className="text-white text-opacity-40 self-center items-center content-center">
+                                    &middot;&nbsp;{userData.username}
+                                  </p>
+                                </Link>
+                                {''}
+                              </div>
+                            </div>
+                            {/* Hiding Follow Button due to bugs 
+                <div>
+                  <div
+                    onClick={trackFollowers}
+                    className="  rounded-3xl group w-max ml-2 p-0.5  mx-1 justify-center  cursor-pointer bg-gradient-to-br from-dbeats-dark-alt to-dbeats-dark-secondary      hover:nm-inset-dbeats-dark-primary          flex items-center   font-medium          transform-gpu  transition-all duration-300 ease-in-out "
+                  >
+                    <div className="  h-full w-full text-black dark:text-white p-1 flex   rounded-3xl bg-gradient-to-br from-dbeats-dark-secondary to-dbeats-dark-primary hover:nm-inset-dbeats-dark-secondary ">
+                      <p className="self-center mx-2 flex">
+                        <span>
+                          {buttonText === 'follow' ? (
+                            <i className="fas fa-plus self-center mx-2"></i>
+                          ) : null}
+                          &nbsp;{buttonText}
+                        </span>
+                        <div
+                          hidden={subscribeLoader}
+                          className="w-3 h-3 ml-2 border-t-4 border-b-4 border-white rounded-full animate-spin"
+                        ></div>
+                      </p>
+                    </div>
+                  </div>
+                </div> */}
+                          </div>
+                        </div>
+                        <div className="flex items-center   w-full">
+                          {subscribeButtonText === 'Subscribe' ? (
+                            <button
+                              id="subscribeButton"
+                              className="flex items-center dark:bg-dbeats-dark-primary border border-dbeats-light dark:hover:bg-dbeats-light p-1 2xl:text-lg lg:text-sm text-md rounded-sm 2xl:px-4 px-4 lg:px-2 mr-3 font-semibold text-white "
+                              onClick={trackFollowers}
+                            >
+                              <span>{subscribeButtonText}</span>
+                              {/* <div
                             hidden={loader}
                             className="w-4 h-4 ml-2 border-t-4 border-b-4 border-white rounded-full animate-spin"
                           ></div> */}
-                        </button>
+                            </button>
+                          ) : null}
 
-                        <button
-                          onClick={handleShowSubscriptionModal}
-                          className={
-                            userData.superfan_data
-                              ? ' dark:bg-dbeats-dark-primary border border-dbeats-light dark:hover:bg-dbeats-light p-1 2xl:text-lg lg:text-sm text-md  rounded-sm 2xl:px-4 px-4 lg:px-2      mr-3 font-semibold text-white   '
-                              : 'hidden'
-                          }
-                        >
-                          <span className={`${userData.superfan_data ? '' : 'hidden'}`}>
-                            Become a Superfan
-                          </span>
-                        </button>
-                      </div>
+                          <button
+                            onClick={handleShowSubscriptionModal}
+                            className={
+                              userData.superfan_data
+                                ? ' flex dark:bg-dbeats-dark-primary border border-dbeats-light dark:hover:bg-dbeats-light p-1 2xl:text-lg lg:text-sm text-md  rounded-sm 2xl:px-4 px-4 lg:px-2      mr-3 font-semibold text-white   '
+                                : 'hidden'
+                            }
+                          >
+                            <span
+                              className={`${
+                                userData.superfan_data ? '' : 'hidden'
+                              } whitespace-nowrap flex`}
+                            >
+                              Become a Superfan
+                            </span>
+                          </button>
+                        </div>
+                      </>
                     ) : (
                       <Link
                         to="/signup"
-                        className="bg-dbeats-light  p-1 2xl:text-lg lg:text-sm text-md  rounded-sm 2xl:px-4 px-4 lg:px-2 mr-3 font-semibold text-white "
+                        className="bg-dbeats-light flex w-max  p-1 2xl:text-lg lg:text-sm text-md  rounded-sm 2xl:px-4 px-4 lg:px-2 mr-3 font-semibold text-white "
                       >
-                        <span>Login to Subscribe & Become a SuperFan</span>
+                        <span className="whitespace-nowrap flex">
+                          Login to Subscribe & Become a SuperFan
+                        </span>
                       </Link>
                     )}
                   </div>
                 ) : null}
               </div>
               <div className="2xl:text-2xl lg:text-md 2xl:py-4 lg:py-2 py-2 flex justify-around dark:text-dbeats-white">
+                <p className={`text-white text-lg text-center pr-2 flex flex-col`}>
+                  <span className={`text-${viewColor}  ${viewAnimate} font-bold`}>
+                    {livestreamViews}
+                  </span>
+                  viewers
+                </p>
                 <div className="  text-center lg:mx-3">
                   <button className="border-0 bg-transparent" onClick={handleShow}>
                     <i className="fas fa-share-alt opacity-50 mx-2"></i>
@@ -263,7 +407,7 @@ const PublicInfo = (props) => {
                     leaveFrom="transform opacity-100 scale-100"
                     leaveTo="transform opacity-0 scale-95"
                   >
-                    <Menu.Items className="  dark:bg-opacity-10 backdrop-filter  backdrop-blur-md absolute right-0 w-56  origin-top-right bg-white dark:bg-dbeats-dark-primary dark:text-gray-50 divide-y divide-gray-100   shadow   focus:outline-none">
+                    <Menu.Items className="   absolute right-0 w-56  origin-top-right bg-white dark:bg-dbeats-dark-primary dark:text-gray-50 divide-y divide-gray-100   shadow   focus:outline-none">
                       <div className="px-1 py-1 ">
                         <Menu.Item className="w-full text-gray-700 dark:text-gray-50 text-left text-lg pl-2 hover:text-white hover:bg-dbeats-light">
                           <button>Report</button>
@@ -276,12 +420,8 @@ const PublicInfo = (props) => {
             </div>
           </div>
         </div>
-        <div className="  w-full col-span-1 px-5 mt-12">
-          <div className=" w-full grid grid-cols-1 grid-flow-row gap-3">
-            {arrayData.map((value, index) => {
-              return <LiveCard key={index} value={value} />;
-            })}
-          </div>
+        <div className="  w-full col-span-1" style={{ height: '100vh' }}>
+          {userData.username && <LiveChat userp={userData} privateUser={user}></LiveChat>}
         </div>
       </div>
       <ShareModal

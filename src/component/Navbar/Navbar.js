@@ -11,9 +11,12 @@ import CircleLogoDark from '../../assets/images/dark-logo-svg.svg';
 import CircleLogo from '../../assets/images/dbeats-logo.png';
 import logo from '../../assets/images/white-logo.svg';
 import useWeb3Modal from '../../hooks/useWeb3Modal';
-
+import moment from 'moment';
 import Toggle from '../toggle.component';
 import classes from './Navbar.module.css';
+import person from '../../assets/images/profile.svg';
+
+moment().format();
 
 const NavBar = () => {
   // eslint-disable-next-line no-unused-vars
@@ -38,6 +41,8 @@ const NavBar = () => {
   // Sidebar functions
   const handleOnOpen = () => setOnOpen(true);
   const isMenuOpen = (state) => setOnOpen(state.isOpen);
+
+  const [userLiveTime, setUserLiveTime] = useState(null);
 
   // Auth functions
   const handleLogout = () => {
@@ -70,6 +75,10 @@ const NavBar = () => {
         method: 'POST',
         url: `${process.env.REACT_APP_SERVER_URL}/user/seennotification`,
         data: data,
+        headers: {
+          'content-type': 'application/json',
+          'auth-token': localStorage.getItem('authtoken'),
+        },
       })
         .then()
         .catch(function (error) {
@@ -177,16 +186,18 @@ const NavBar = () => {
     videoData: filteredVideoData,
   };
 
+  const convertTimestampToTime = (timeValue) => {
+    const timestamp = new Date(timeValue.timestamp); // This would be the timestamp you want to format
+    setUserLiveTime(moment(timestamp).fromNow());
+  };
+
   const NotificationContent = ({ data }) => {
-    console.log(data);
+    // console.log(data);
+    convertTimestampToTime(data);
     return (
       <div className="h-full my-1">
-        <Link
-          to={{
-            pathname: `${process.env.REACT_APP_CLIENT_URL}/profile/${data.username}/posts`,
-          }}
-          target="_blank"
-          rel="noopener noreferrer"
+        <a
+          href={`/live/${data.username}`}
           className="grid grid-cols-4 justify-center p-2 dark:bg-dbeats-dark-alt dark:hover:bg-dbeats-dark-secondary dark:text-white text-gray-500"
         >
           {data.post_image ? (
@@ -212,16 +223,37 @@ const NavBar = () => {
               <img src={CircleLogo} alt="announcement_info" className="h-full w-auto rounded-sm" />
             </div>
           ) : null}
-          <div className="col-span-3 rounded-sm ">
-            <p className="pl-2 line-clamp-3 text-sm font-semibold break-words">
-              {data.announcement}
-            </p>
-          </div>
-        </Link>
+          {data.announcement.includes('was') ? (
+            <div className="col-span-3 rounded-sm ">
+              <p className="pl-2 line-clamp-3 text-sm font-semibold break-words">
+                {data.announcement + ` ${userLiveTime} ago`}
+              </p>
+            </div>
+          ) : (
+            <div className="col-span-3 rounded-sm ">
+              <p className="pl-2 line-clamp-3 text-sm font-semibold break-words">
+                {data.announcement}
+              </p>
+              <p className="pl-2 line-clamp-3 text-xs font-normal break-words">{userLiveTime}</p>
+            </div>
+          )}
+        </a>
       </div>
     );
   };
 
+  const EmptyNotificationContent = () => {
+    return (
+      <div className="h-full my-1">
+        <div
+          rel="noopener noreferrer"
+          className="grid grid-cols-4 justify-center p-2 dark:bg-dbeats-dark-alt dark:hover:bg-dbeats-dark-secondary dark:text-white text-gray-500"
+        >
+          <p>No new Notifications</p>
+        </div>
+      </div>
+    );
+  };
   return (
     <>
       <div className={`${darkMode && 'dark'}`}>
@@ -321,7 +353,7 @@ const NavBar = () => {
               </svg>
             </div>
             <div className="flex items-center">
-              <Link to="/" className="  self-center cursor-pointer sm:flex hidden">
+              <a href="/" className="  self-center cursor-pointer sm:flex hidden">
                 <img
                   src={logo}
                   alt="dbeats_logo"
@@ -333,8 +365,8 @@ const NavBar = () => {
                   className="h-10 lg:h-7 2xl:h-10 w-max hidden dark:block"
                 ></img>
                 <span className="mr-5 text-lg font-bold   sm:ml-2"> </span>
-              </Link>
-              <Link to="/" className="flex self-center cursor-pointer sm:hidden ">
+              </a>
+              <a href="/" className="flex self-center cursor-pointer sm:hidden ">
                 <img
                   src={CircleLogo}
                   alt="dbeats_logo"
@@ -346,7 +378,7 @@ const NavBar = () => {
                   className="h-10 lg:h-7 2xl:h-10 w-max hidden dark:block  "
                 ></img>
                 <span className="mr-5 text-lg font-bold   sm:ml-2"> </span>
-              </Link>
+              </a>
               <p
                 className="px-2 -ml-3.5 flex pb-0.5 mt-1 text-xs text-white dark:text-dbeats-light 
               bg-dbeats-light dark:bg-dbeats-alt border border-white dark:border-dbeats-light font-semibold rounded-lg"
@@ -528,8 +560,8 @@ const NavBar = () => {
                       {newNotification > 0 ? (
                         <div
                           className="bg-red-500 rounded-full shadow  
-                        h-6 w-6 text-sm self-center text-center font-semibold  
-                        absolute -bottom-2  -right-2  
+                        h-4 w-4 text-xs self-center text-center font-semibold  
+                        absolute -top-1  -right-2  
                          text-white"
                         >
                           {newNotification}
@@ -547,39 +579,41 @@ const NavBar = () => {
                     leaveTo="transform opacity-0 scale-95"
                   >
                     <Dropdown.Items
-                      className="absolute right-0 w-96 mt-2 origin-top-right 
-                    dark:bg-dbeats-dark-primary bg-white divide-y divide-gray-100 rounded-md shadow-lg 
+                      className="absolute right-0 w-96 mt-6 origin-top-right max-h-125 overflow-y-scroll	overflow-x-hidden
+                    dark:bg-dbeats-dark-primary   divide-y divide-white divide-opacity-20 rounded-md shadow-lg 
                      focus:outline-none"
                     >
-                      {notification.map((value, i) => {
-                        return (
-                          <div className="px-1   " key={i}>
-                            <Dropdown.Item className="w-full h-full self-center dark:bg-dbeats-dark-primary">
-                              <NotificationContent data={value} />
-                            </Dropdown.Item>
-                          </div>
-                        );
-                      })}
+                      {notification.length > 0 ? (
+                        <>
+                          {notification.map((value, i) => {
+                            return (
+                              <div className="px-1   " key={i}>
+                                <Dropdown.Item className="w-full h-full self-center dark:bg-dbeats-dark-primary">
+                                  <NotificationContent data={value} />
+                                </Dropdown.Item>
+                              </div>
+                            );
+                          })}
+                        </>
+                      ) : (
+                        <div className="px-1   ">
+                          <Dropdown.Item className="w-full h-full self-center  nm-flat-dbeats-dark-primary rounded">
+                            <EmptyNotificationContent />
+                          </Dropdown.Item>
+                        </div>
+                      )}
                     </Dropdown.Items>
                   </Transition>
                 </Dropdown>
 
                 <Link
                   to={`/profile/${user.username}`}
-                  className="shadow-sm 2xl:h-10  2xl:w-10 self-center  h-7 w-7 bg-dbeats-light hover:bg-dbeats-secondary-light text-white rounded-full font-bold mx-2 flex"
+                  className="shadow-sm 2xl:h-10  2xl:w-10 self-center  h-8 w-8 p-0.5 nm-flat-dbeats-dark-primary hover:nm-inset-dbeats-dark-primary text-white rounded-full font-bold mx-2 flex"
                 >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="2xl:h-7 2xl:w-7  h-5 w-5  mx-auto self-center"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
+                  <img
+                    src={user.profile_image ? user.profile_image : person}
+                    className=" mx-auto self-center rounded-full"
+                  ></img>
                 </Link>
               </div>
             ) : (

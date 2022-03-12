@@ -1,14 +1,17 @@
 import axios from 'axios';
 //import Ticket from '../Profile/ProfileSections/Ticket/Ticket';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button } from 'react-bootstrap';
 import { useSelector } from 'react-redux';
-import moralisLogo from '../../assets/images/moralis-light.svg';
 import useWeb3Modal from '../../hooks/useWeb3Modal';
 import ForgotPasswordForm from './component/ForgotPasswordForm';
 import LoginForm from './component/LoginForm';
 import SignupForm from './component/SignupForm';
+import { CHAIN_NAMESPACES, CustomChainConfig } from '@web3auth/base';
+import Torus from '@toruslabs/torus-embed';
 
+import Web3 from 'web3';
+import { Web3Auth } from '@web3auth/web3auth';
 const Moralis = require('moralis');
 
 const Login = () => {
@@ -22,38 +25,46 @@ const Login = () => {
   const [loader, setLoader] = useState(true);
   const [resetPasswordEmail, setResetPasswordEmail] = useState('');
   const [forgotPassword, setForgotPassword] = useState(false);
+  const [account, setAccount] = useState(null);
 
+  useEffect(async () => {
+    if (provider && !account) {
+      const web3 = new Web3(provider);
+      const address = (await web3.eth.getAccounts())[0];
+      const balance = await web3.eth.getBalance(address);
+
+      setAccount(address);
+    }
+  }, [provider]);
+
+  useEffect(async () => {
+    setAccount(null);
+
+    console.log('logged out');
+  }, [logoutOfWeb3Modal]);
   // Metamask Auth
   function WalletButton({ provider, loadWeb3Modal, logoutOfWeb3Modal }) {
     return (
-      <div>
+      <div className="nm-flat-dbeats-dark-secondary p-1 rounded-3xl hover:nm-inset-dbeats-dark-secondary   transform-gpu  transition-all duration-300 ease-in-out ">
         <button
-          className={`font-bold flex self-center text-center
-          ${!provider ? 'cursor-pointer' : 'cursor-default'} `}
+          className={` relative px-5 py-2.5 whitespace-nowrap text-xs sm:text-sm text-white  bg-gradient-to-br from-yellow-500 to-yellow-600  hover:nm-inset-yellow-500 rounded-3xl  `}
           onClick={async () => {
             if (!provider) {
-              loadWeb3Modal();
+              await loadWeb3Modal();
             } else {
-              logoutOfWeb3Modal();
+              await logoutOfWeb3Modal();
+              setAccount(null);
             }
           }}
-          disabled={provider ? true : false}
         >
-          <p className="mt-2">
+          <p className=" ">
             {' '}
-            {!provider
-              ? 'Connect MetaMask '
-              : `Connected (${
-                  provider.provider.selectedAddress.slice(0, 4) +
-                  '...' +
-                  provider.provider.selectedAddress.slice(-4)
+            {!account
+              ? 'Sign up using Wallet '
+              : `Connected  (${
+                  account ? account.slice(0, 8) : '' + '...' + account ? account.slice(-4) : ''
                 })`}
           </p>
-          <img
-            className="2xl:w-12 2xl:h-12 lg:w-9 lg:h-9 h-9 w-9 rounded-full self-center"
-            alt="metamask button"
-            src="https://raw.githubusercontent.com/MetaMask/brand-resources/master/SVG/metamask-fox.svg"
-          ></img>
         </button>
       </div>
     );
@@ -63,30 +74,40 @@ const Login = () => {
   function LoginWalletButton({ provider, loadWeb3Modal, logoutOfWeb3Modal }) {
     return (
       <div>
-        <Button
-          className="font-bold flex lg:text-sm 2xl:text-lg self-center text-center"
-          type="button"
-          onClick={async () => {
-            let variable = await loadWeb3Modal();
-            if (provider && variable) {
-              await axios
-                .get(
-                  `${process.env.REACT_APP_SERVER_URL}/user/getuser_by_wallet/${provider.provider.selectedAddress}`,
-                )
-                .then((value) => {
-                  window.localStorage.setItem('user', JSON.stringify(value.data));
-                  window.location.href = '/';
-                });
-            }
-          }}
+        <div
+          className="    transform-gpu  transition-all duration-300 ease-in-out mt-3 cursor-pointer
+         relative inline-flex items-center justify-center p-1 mb-2 mr-2 overflow-hidden text-sm font-medium 
+         text-gray-900 rounded-3xl  bg-gradient-to-br from-dbeats-dark-alt to-dbeats-dark-primary  nm-flat-dbeats-dark-secondary   hover:nm-inset-dbeats-dark-secondary   hover:text-white dark:text-white  "
         >
-          <p className="mt-2">{!provider ? 'Login using ' : `MetaMask Connected (Click Again)`}</p>
-          <img
-            className="2xl:w-12 2xl:h-12 lg:w-9 lg:h-9 h-9 w-9 rounded-full self-center"
-            alt="metamask login"
-            src="https://raw.githubusercontent.com/MetaMask/brand-resources/master/SVG/metamask-fox.svg"
-          ></img>
-        </Button>
+          <Button
+            className="relative px-5 py-2.5 whitespace-nowrap text-xs sm:text-sm  bg-gradient-to-br from-yellow-500 to-yellow-600 hover:nm-inset-yellow-500 rounded-3xl"
+            type="button"
+            onClick={async () => {
+              if (!provider) {
+                await loadWeb3Modal();
+              }
+              if (provider && account !== '') {
+                console.log('ADDRESS', account);
+                await axios
+                  .get(`${process.env.REACT_APP_SERVER_URL}/user/getuser_by_wallet/${account}`)
+                  .then((value) => {
+                    console.log('VALUE', value.data);
+                    window.localStorage.setItem('user', JSON.stringify(value.data.user));
+                    window.localStorage.setItem('authtoken', JSON.stringify(value.data.jwtToken));
+                    window.location.href = '/';
+                  });
+              }
+            }}
+          >
+            <p className=" ">
+              {!account
+                ? 'Sign in using Wallet'
+                : `(${
+                    account ? account.slice(0, 8) : '' + '...' + account ? account.slice(-4) : ''
+                  })  Connected (Click Again)`}
+            </p>
+          </Button>
+        </div>
       </div>
     );
   }

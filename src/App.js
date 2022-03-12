@@ -25,18 +25,15 @@ import NewPassword from './pages/Login/NewPassword';
 import VerifyEmail from './pages/Login/VerifyEmail';
 import Profile from './pages/Profile/Profile';
 import ChatRoom from './pages/Profile/ProfileSections/ChatRoom/ChatRoom';
-import Ticket from './pages/Profile/ProfileSections/Ticket/Ticket';
+//import Ticket from './pages/Profile/ProfileSections/Ticket/Ticket';
 import UserRoomPage from './pages/VideoPages/Pages/GoLive_UserPage/UserRoomPage';
 import PublicRoom from './pages/VideoPages/Pages/LivePublicPage/PublicRoomPage';
 import Playback from './pages/VideoPages/Pages/PlayBack/PlaybackRoomPage';
 import TrackPlayback from './pages/VideoPages/Pages/TrackPage/TrackInfo';
-import OnboardingModal from './component/Modals/OnboardingModal/OnboardingModal';
 import ResetWallet from './pages/Login/ResetWallet';
 
 // components
 
-import AdminNavbar from './component/Navbar/AdminNavbar';
-import Sidebar from './component/Sidebar/Sidebar';
 import HeaderStats from './component/Headers/HeaderStats';
 import FooterAdmin from './component/Footers/FooterAdmin';
 
@@ -48,11 +45,16 @@ import Settings from './views/admin/Settings.js';
 import Tables from './views/admin/Tables.js';
 
 import { useState } from 'react';
+
+import Ticket from './Ticket.js';
+import useWeb3Modal from './hooks/useWeb3Modal';
+
 export default function App() {
   const user = JSON.parse(window.localStorage.getItem('user'));
   const darkMode = useSelector((state) => state.toggleDarkMode);
   let darkmode = JSON.parse(window.localStorage.getItem('darkmode'));
   const dispatch = useDispatch();
+  const [provider, loadWeb3Modal, logoutOfWeb3Modal] = useWeb3Modal();
 
   const userType = useSelector((state) => state.toggleUserType);
   //dispatch(toggleUserType(userType));
@@ -92,10 +94,12 @@ export default function App() {
       setLatestTrack(data);
       setLatestUploads(true);
     }
+    await loadWeb3Modal();
   };
 
-  useEffect(() => {
+  useEffect(async () => {
     if (user) {
+      //console.log('THIS IS BEING PASSED', user);
       axios.get(`${process.env.REACT_APP_SERVER_URL}/user/${user.username}`).then((value) => {
         window.localStorage.setItem('user', JSON.stringify(value.data));
       });
@@ -139,6 +143,9 @@ export default function App() {
 
                   {userType === 1 ? <GamerHome /> : null}
                   {userType === 2 ? <VideoHome /> : null}
+                </Route>
+                <Route exact path="/ticket">
+                  <Ticket></Ticket>
                 </Route>
                 <Route exact path="/signup">
                   <TopLoader page="signup" />

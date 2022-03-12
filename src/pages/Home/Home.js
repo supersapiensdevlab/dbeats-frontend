@@ -1,21 +1,21 @@
+import { Splide, SplideSlide } from '@splidejs/react-splide';
+import '@splidejs/splide/dist/css/themes/splide-skyblue.min.css';
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
-import Carousel from 'react-grid-carousel';
 import Lottie from 'react-lottie';
+import Modal from 'react-modal';
 import { useSelector } from 'react-redux';
-import logo from '../..//assets/images/logo.svg';
+import Billboard from '../../component/Billboard/Billboard-Card';
+import ProfileCard from '../../component/Cards/ProfileCard';
+import Dropdown from '../../component/dropdown.component';
+import FeedbackForm from '../../component/form/feedbackForm';
+import HowToUse from '../../component/form/howToUse';
+import MainToolbar from '../../component/Toolbar/main-toolbar';
 import animationData from '../../lotties/gamers.json';
 import ResponsiveCarousel from './Cards/HomeSlider';
 import LiveCard from './Cards/LiveCard';
 import PlayBackCard from './Cards/PlayBackCard';
-// import {Helmet} from "react-helmet";
-import { Link } from 'react-router-dom';
-import Dropdown from '../../component/dropdown.component';
-import FeedbackForm from '../../component/form/feedbackForm';
-import { ReactComponent as Verified } from '../../assets/icons/verified-account.svg';
-import MainToolbar from '../../component/Toolbar/main-toolbar';
-import maticLogo from '../../assets/graphics/polygon-matic-logo.svg';
-import Modal from 'react-modal';
+
 Modal.setAppElement('#root');
 
 const Home = () => {
@@ -29,6 +29,9 @@ const Home = () => {
   const [latestTrack, setLatestTrack] = useState([]);
 
   const user = JSON.parse(window.localStorage.getItem('user'));
+
+  const [verifiedUser, setverifiedUser] = useState(null);
+
   const defaultOptions = {
     loop: true,
     autoplay: true,
@@ -39,37 +42,9 @@ const Home = () => {
   };
   const [latestUploads, setLatestUploads] = useState(null);
 
-  const [ad, setAd] = useState({
-    adName: '',
-    adImage: '',
-    adImageFile: '',
-    category: '',
-    ratings: '',
-    tags: '',
-    description: '',
-    allowAttribution: '',
-    commercialUse: '',
-    derivativeWorks: '',
-  });
-
-  const onVideoFileChange = (e) => {
-    if (e.target.name === 'adImageFile') {
-      ad.adImageFile = e.target.files[0];
-      var adName = e.target.files[0].name.replace(/\.[^/.]+$/, '');
-
-      ad.adName = adName;
-      document.getElementById('ad-label').textContent = adName;
-
-      if (e.target.files && e.target.files[0]) {
-        var reader = new FileReader();
-
-        reader.onload = function (e) {
-          document.getElementById('adImage').src = e.target.result;
-          document.getElementById('adImage').style.display = 'block';
-        };
-        reader.readAsDataURL(e.target.files[0]);
-      }
-    }
+  Splide.defaults = {
+    type: 'loop',
+    perPage: 2,
   };
 
   const category = [
@@ -85,32 +60,6 @@ const Home = () => {
 
   const filter = ['All', 'Music', 'Gaming', 'Movies', 'Videos', 'NFT'];
   const [selectedFilter, setSelectedFilter] = useState(filter[0]);
-
-  const customStyles = {
-    content: {
-      top: '50%',
-      left: '50%',
-      right: 'auto',
-      bottom: 'auto',
-      marginRight: '-50%',
-      transform: 'translate(-50%, -50%)',
-      background: '#181818',
-    },
-  };
-
-  const [modalIsOpen, setIsOpen] = React.useState(false);
-
-  function openModal() {
-    setIsOpen(true);
-  }
-
-  function afterOpenModal() {
-    // references are now sync'd and can be accessed.
-  }
-
-  function closeModal() {
-    setIsOpen(false);
-  }
 
   useEffect(() => {
     let slidesValue = [];
@@ -129,7 +78,16 @@ const Home = () => {
       setSlides(slidesValue);
     });
     fetchData();
-    // eslint-disable-next-line
+
+    axios.get(`${process.env.REACT_APP_SERVER_URL}/get_verifiedusers`).then(async (repos) => {
+      let data = [];
+      for (let i = 0; i < repos.data.length; i++) {
+        data.push(repos.data[i]);
+      }
+
+      setverifiedUser(data);
+      // console.log(data);
+    });
   }, []);
 
   const fetchData = async () => {
@@ -152,7 +110,7 @@ const Home = () => {
       }
       setLatestVideo(trending);
       {
-        console.log(trending);
+        //console.log(trending);
       }
       setLatestUploads(true);
     }
@@ -177,56 +135,114 @@ const Home = () => {
         <meta property="og:description"        content="<div style='font-size:20px; font-weight:500;color:green;'>Live Streaming Videos 🎥, Music &#127926; & NFTs Platform on the Blockchain 🚀</div>" />
         <meta property="og:image"              content="https://beta.dbeats.live/favicon.ico" />
       </Helmet> */}
-      <div className={`${darkMode && 'dark'} justify-center pt-18`}>
+      <div className={`${darkMode && 'dark'} justify-center pt-16`}>
         {activeStreams && activeStreams.length > 0 ? (
-          <div className="   mx-20 my-4">
-            <div id="display_videos" className="lg:my-5 lg:px-4  ">
-              <div className=" lg:px-4 h-max">
-                {slides.length > 2 ? (
+          <div className="lg:mx-20  ">
+            {slides.length > 2 ? (
+              <div id="display_videos" className="lg:my-5 lg:px-4    mx-20 ">
+                <div className=" lg:px-4 h-max">
                   <div className="">
                     <ResponsiveCarousel slides={slides} autoplay={false} />
                   </div>
-                ) : null}
+                </div>
               </div>
-            </div>
+            ) : null}
 
-            <div className=" 2xl:px-4  ">
+            <div className=" 2xl:px-4  mx-auto pt-4">
               <div>
-                <h4 className=" font-bold  2xl:pb-4 lg:pb-2">
-                  {activeStreams ? (
-                    (activeStreams.length <= 2 && activeStreams.length !== 0) ||
-                    activeStreams.length > 5 ? (
-                      <>
-                        <p className="mb-3 w-max mx-auto   self-center text-center  drop-shadow text-2xl  font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500 dark:from-white dark:to-gray-800">
-                          <span className=" bg-red-900 animate-ping mr-2 sm:rounded-full   inline-block  h-2 w-2 self-center ">
-                            &middot;
-                          </span>
-                          LIVE
-                        </p>
-                        <div className="">
-                          <Carousel className="my-2 py-2" cols={5}>
-                            {activeStreams.map((liveUser, i) => {
-                              if (activeStreams.length <= 2 || i >= 5) {
-                                return (
-                                  <Carousel.Item key={i}>
-                                    <LiveCard
-                                      className="my-2 py-2"
-                                      liveUserData={liveUser}
-                                      username={liveUser.username}
-                                    />
-                                  </Carousel.Item>
-                                );
-                              }
-                              return 0;
-                            })}
-                          </Carousel>
-                        </div>{' '}
-                      </>
-                    ) : null
-                  ) : (
-                    false
-                  )}
-                </h4>
+                {activeStreams ? (
+                  (activeStreams.length <= 2 && activeStreams.length !== 0) ||
+                  activeStreams.length > 5 ? (
+                    <>
+                      <div className="">
+                        <Splide
+                          className=" "
+                          options={{
+                            perMove: 1,
+                            grid: {
+                              // You can define rows/cols instead of dimensions.
+                              dimensions: [
+                                [1, 1],
+                                [2, 2],
+                                [2, 1],
+                                [1, 2],
+                                [2, 2],
+                                [3, 2],
+                              ],
+                              gap: {
+                                row: '6px',
+                                col: '6px',
+                              },
+                            },
+                            perPage: 4,
+                            gap: '1rem',
+                            autoplay: true,
+                            drag: 'free',
+                            focus: 'center',
+                            arrows: false,
+                            interval: 300,
+                            dots: false,
+                            pagination: false,
+                            autoScroll: {
+                              speed: 2,
+                            },
+                            breakpoints: {
+                              1920: {
+                                perPage: 4,
+                                gap: '.7rem',
+                              },
+                              1440: {
+                                perPage: 3,
+                                gap: '.7rem',
+                              },
+                              1280: {
+                                perPage: 2,
+                                gap: '.7rem',
+                              },
+                              1024: {
+                                perPage: 2,
+                                gap: '.7rem',
+                              },
+                              960: {
+                                perPage: 1,
+                                gap: '.7rem',
+                              },
+                              720: {
+                                perPage: 1,
+                                gap: '.7rem',
+                              },
+                              640: {
+                                perPage: 1,
+                                gap: '.7rem',
+                              },
+                              480: {
+                                perPage: 1,
+                                gap: '.7rem',
+                              },
+                            },
+                          }}
+                        >
+                          {activeStreams.map((liveUser, i) => {
+                            if (activeStreams.length <= 2 || i >= 5) {
+                              return (
+                                <SplideSlide
+                                  className="px-2 py-2"
+                                  key={i}
+                                  data-splide-interval="1000"
+                                >
+                                  <LiveCard liveUserData={liveUser} username={liveUser.username} />
+                                </SplideSlide>
+                              );
+                            }
+                            return 0;
+                          })}{' '}
+                        </Splide>
+                      </div>{' '}
+                    </>
+                  ) : null
+                ) : (
+                  false
+                )}
               </div>
             </div>
           </div>
@@ -235,122 +251,80 @@ const Home = () => {
           <div
             className={`${
               darkMode && 'dark'
-            }  grid grid-cols-10  dark:bg-dbeats-dark-primary   mx-auto  md:gap-2 md:px-14 lg:px-24 sm:px-10`}
+            }  grid grid-cols-10  dark:bg-dbeats-dark-primary   mx-auto  md:gap-2 md:pl-9 md:pr-8 lg:pl-24 lg:pr-8 sm:px-10`}
           >
             <div className="col-span-1 xl:block hidden"></div>
-            <div className="w-full col-span-3 lg:col-span-2  h-full   md:block hidden      ">
-              {user ? (
-                <div className="mb-4 ">
-                  <>
-                    <div>
-                      <div className="flex items-center  text-center bg-gradient-to-br from-dbeats-dark-alt to-dbeats-dark-secondary p-0.5  sm:rounded-xl nm-flat-dbeats-dark-primary">
-                        <div className=" dark:text-gray-50  pb-4    border-opacity-30  shadow-sm dark:shadow-md  bg-gradient-to-br from-dbeats-dark-secondary to-dbeats-dark-primary  text-dbeats-dark-primary sm:rounded-xl   w-full ">
-                          <div className="flex items-center h-max w-full justify-center">
-                            <div className="max-w-xs">
-                              <div className="   sm:rounded-lg py-3">
-                                <Link
-                                  className="relative align-middle   justify-items-center items-center nm-flat-dbeats-dark-primary"
-                                  to={`/profile/${user.username}`}
-                                >
-                                  <div className="photo-wrapper p-2">
-                                    <img
-                                      className="w-24 h-24 sm:rounded-full mx-auto"
-                                      src={user.profile_image !== '' ? user.profile_image : logo}
-                                      alt="John Doe"
-                                    />
-                                  </div>
-                                </Link>
-                                <div className="p-2">
-                                  <p className="truncate   text-center flex justify-center  text-dbeats-dark-primary dark:text-gray-200 2xl:font-bold lg:text-sm">
-                                    {user.name}
-                                    {user.is_verified ? (
-                                      <Verified className="h-4 w-4  items-center self-center justify-center text-dbeats-light mx-1" />
-                                    ) : null}
-                                  </p>
-                                  <p className="  2xl:text-sm lg:text-xs text-gray-400 text-center ">
-                                    {' '}
-                                    {user.username}{' '}
-                                  </p>
 
-                                  <div className="text-center my-3"></div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </>
-                </div>
-              ) : null}
+            <div className="w-full col-span-4 md:col-span-3 lg:col-span-3 xl:col-span-2   h-full   md:block hidden      ">
               <div className="sticky top-20">
-                <FeedbackForm />
+                {/* <Billboard user={user}></Billboard> */}
+                <HowToUse className="z-500" />
               </div>
             </div>
             {/* {classes.other_videos} */}
 
-            <div className="flex flex-col justify-between   h-full w-full  col-span-10 md:col-span-7 lg:col-span-5  xl:col-span-4 ">
-              <div className="2xl:px-4 lg:px-3 ">
-                <div className="  ">
+            <div className="flex flex-col justify-between     h-full w-full  col-span-10 md:col-span-6 lg:col-span-5  xl:col-span-4 ">
+              <div className="2xl:px-4 lg:px-3  my-2 sm:my-4">
+                <div>
                   {user ? <MainToolbar></MainToolbar> : ''}
-
-                  <div className="flex mt-3 align-middle justify-center">
-                    <Dropdown
-                      className="sm:font-normal text-xs "
-                      data={category}
-                      setSelected={setSelectedCategory}
-                      getSelected={selectedCategory}
-                    />
-                    <button className="self-center rounded-3xl group w-max ml-2 p-1 mr-1  justify-center  cursor-pointer bg-gradient-to-br from-dbeats-dark-alt to-dbeats-dark-primary  nm-flat-dbeats-dark-primary   hover:nm-inset-dbeats-dark-primary          flex items-center            transform-gpu  transition-all duration-300 ease-in-out ">
-                      <span
-                        onClick={() => setSelectedFilter(filter[0])}
-                        className={`${
-                          selectedFilter === filter[0]
-                            ? 'nm-inset-dbeats-dark-secondary dark:text-dbeats-light'
-                            : ''
-                        }  text-black dark:text-white  flex p-1 rounded-3xl bg-gradient-to-br from-dbeats-dark-secondary to-dbeats-dark-secondary`}
-                      >
-                        <p className="self-center mx-2 sm:font-normal text-xs">All</p>
-                      </span>
-                    </button>
-                    <button className="self-center rounded-3xl group w-max ml-1 p-1 justify-center  cursor-pointer bg-gradient-to-br from-dbeats-dark-alt to-dbeats-dark-primary  nm-flat-dbeats-dark-primary   hover:nm-inset-dbeats-dark-primary          flex items-center            transform-gpu  transition-all duration-300 ease-in-out ">
-                      <span
-                        onClick={() => setSelectedFilter(filter[1])}
-                        className={`${
-                          selectedFilter === filter[1]
-                            ? 'nm-inset-dbeats-dark-secondary dark:text-dbeats-light'
-                            : ''
-                        }  text-black dark:text-white  flex p-1 rounded-3xl bg-gradient-to-br from-dbeats-dark-secondary to-dbeats-dark-secondary`}
-                      >
-                        <p className="self-center mx-2 sm:font-normal text-xs">Music</p>
-                      </span>
-                    </button>
-                    <button className="self-center rounded-3xl group w-max ml-1 p-1 justify-center  cursor-pointer bg-gradient-to-br from-dbeats-dark-alt to-dbeats-dark-primary  nm-flat-dbeats-dark-primary   hover:nm-inset-dbeats-dark-primary          flex items-center            transform-gpu  transition-all duration-300 ease-in-out ">
-                      <span
-                        onClick={() => setSelectedFilter(filter[2])}
-                        className={`${
-                          selectedFilter === filter[2]
-                            ? 'nm-inset-dbeats-dark-secondary dark:text-dbeats-light'
-                            : ''
-                        }  text-black dark:text-white  flex p-1 rounded-3xl bg-gradient-to-br from-dbeats-dark-secondary to-dbeats-dark-secondary`}
-                      >
-                        <p className="self-center mx-2 sm:font-normal text-xs">Videos</p>
-                      </span>
-                    </button>
-                    <button className="self-center rounded-3xl group w-max ml-1 p-1 justify-center  cursor-pointer bg-gradient-to-br from-dbeats-dark-alt to-dbeats-dark-primary  nm-flat-dbeats-dark-primary   hover:nm-inset-dbeats-dark-primary          flex items-center            transform-gpu  transition-all duration-300 ease-in-out ">
-                      <span
-                        onClick={() => setSelectedFilter(filter[3])}
-                        className={`${
-                          selectedFilter === filter[3]
-                            ? 'nm-inset-dbeats-dark-secondary dark:text-dbeats-light'
-                            : ''
-                        }  text-black dark:text-white  flex p-1 rounded-3xl bg-gradient-to-br from-dbeats-dark-secondary to-dbeats-dark-secondary`}
-                      >
-                        <p className="self-center mx-2 sm:font-normal text-xs">NFT</p>
-                      </span>
-                    </button>
+                  <div className=" ">
+                    <div className="flex mt-3 align-middle justify-center ">
+                      <Dropdown
+                        className="sm:font-normal text-xs "
+                        data={category}
+                        setSelected={setSelectedCategory}
+                        getSelected={selectedCategory}
+                      />
+                      <button className="self-center rounded-3xl group w-max ml-2 p-1 mr-1  justify-center  cursor-pointer bg-gradient-to-br from-dbeats-dark-alt to-dbeats-dark-primary  nm-flat-dbeats-dark-primary   hover:nm-inset-dbeats-dark-primary          flex items-center            transform-gpu  transition-all duration-300 ease-in-out ">
+                        <span
+                          onClick={() => setSelectedFilter(filter[0])}
+                          className={`${
+                            selectedFilter === filter[0]
+                              ? 'nm-inset-dbeats-dark-secondary dark:text-dbeats-light'
+                              : ''
+                          }  text-black dark:text-white  flex p-1 rounded-3xl bg-gradient-to-br from-dbeats-dark-secondary to-dbeats-dark-secondary`}
+                        >
+                          <p className="self-center mx-2 sm:font-normal text-xs">All</p>
+                        </span>
+                      </button>
+                      <button className="self-center rounded-3xl group w-max ml-1 p-1 justify-center  cursor-pointer bg-gradient-to-br from-dbeats-dark-alt to-dbeats-dark-primary  nm-flat-dbeats-dark-primary   hover:nm-inset-dbeats-dark-primary          flex items-center            transform-gpu  transition-all duration-300 ease-in-out ">
+                        <span
+                          onClick={() => setSelectedFilter(filter[1])}
+                          className={`${
+                            selectedFilter === filter[1]
+                              ? 'nm-inset-dbeats-dark-secondary dark:text-dbeats-light'
+                              : ''
+                          }  text-black dark:text-white  flex p-1 rounded-3xl bg-gradient-to-br from-dbeats-dark-secondary to-dbeats-dark-secondary`}
+                        >
+                          <p className="self-center mx-2 sm:font-normal text-xs">Music</p>
+                        </span>
+                      </button>
+                      <button className="self-center rounded-3xl group w-max ml-1 p-1 justify-center  cursor-pointer bg-gradient-to-br from-dbeats-dark-alt to-dbeats-dark-primary  nm-flat-dbeats-dark-primary   hover:nm-inset-dbeats-dark-primary          flex items-center            transform-gpu  transition-all duration-300 ease-in-out ">
+                        <span
+                          onClick={() => setSelectedFilter(filter[2])}
+                          className={`${
+                            selectedFilter === filter[2]
+                              ? 'nm-inset-dbeats-dark-secondary dark:text-dbeats-light'
+                              : ''
+                          }  text-black dark:text-white  flex p-1 rounded-3xl bg-gradient-to-br from-dbeats-dark-secondary to-dbeats-dark-secondary`}
+                        >
+                          <p className="self-center mx-2 sm:font-normal text-xs">Videos</p>
+                        </span>
+                      </button>
+                      <button className="self-center rounded-3xl group w-max ml-1 p-1 justify-center  cursor-pointer bg-gradient-to-br from-dbeats-dark-alt to-dbeats-dark-primary  nm-flat-dbeats-dark-primary   hover:nm-inset-dbeats-dark-primary          flex items-center            transform-gpu  transition-all duration-300 ease-in-out ">
+                        <span
+                          onClick={() => setSelectedFilter(filter[3])}
+                          className={`${
+                            selectedFilter === filter[3]
+                              ? 'nm-inset-dbeats-dark-secondary dark:text-dbeats-light'
+                              : ''
+                          }  text-black dark:text-white  flex p-1 rounded-3xl bg-gradient-to-br from-dbeats-dark-secondary to-dbeats-dark-secondary`}
+                        >
+                          <p className="self-center mx-2 sm:font-normal text-xs">NFT</p>
+                        </span>
+                      </button>
+                    </div>
                   </div>
-
                   <div className="my-2">
                     <div
                       className="mt-10 animate-spin rounded-full h-7 w-7 mx-auto border-t-2 border-b-2 bg-gradient-to-r from-green-400 to-blue-500 "
@@ -367,6 +341,7 @@ const Home = () => {
                       return (
                         <div key={i}>
                           <PlayBackCard darkMode={darkMode} playbackUserData={playbackUser} />
+                          {/* {i % 3 == 0 ? <Billboard user={user}></Billboard> : null} */}
                         </div>
                       );
                     })}
@@ -384,97 +359,39 @@ const Home = () => {
               </div>
             </div>
 
-            <div className="w-full   h-full    hidden  lg:block md:hidden  col-span-2  ">
-              {user ? (
-                <div className="mb-4 ">
-                  <>
-                    <div>
-                      <div className=" flex items-center  text-center bg-gradient-to-br from-dbeats-dark-alt to-dbeats-dark-secondary p-0.5  sm:rounded-xl nm-flat-dbeats-dark-primary">
-                        <div className="  dark:text-gray-50     border-opacity-30  shadow-sm dark:shadow-md  bg-gradient-to-br from-dbeats-dark-secondary to-dbeats-dark-primary  text-dbeats-dark-primary sm:rounded-xl   w-full ">
-                          <div className="  flex items-center h-max w-full justify-center">
-                            <div className="  max-w-xs sm:rounded-xl ">
-                              <img
-                                className="  h-full w-full sm:rounded-xl "
-                                src="https://via.placeholder.com/400x250"
-                                alt="avatar"
-                              />
+            <div className="w-full   h-full    col-span-4 md:col-span-3 lg:col-span-2 xl:col-span-2  lg:block hidden  ">
+              <div className="my-4 ">
+                <FeedbackForm className="z-500" />
+              </div>
 
-                              <div className="flex align-middle justify-center items-center">
-                                <p className="text-white text-opacity-40 mx-1">
-                                  rent this billboard
-                                </p>
-                                <div className="my-3 rounded-3xl group w-max ml-2 p-1  mx-1 justify-center  cursor-pointer bg-gradient-to-br from-dbeats-dark-alt to-dbeats-dark-primary  nm-flat-dbeats-dark-primary   hover:nm-inset-dbeats-dark-primary          flex items-center   font-medium          transform-gpu  transition-all duration-300 ease-in-out ">
-                                  <span
-                                    onClick={openModal}
-                                    className="  text-black dark:text-white  flex p-1 rounded-3xl bg-gradient-to-br from-dbeats-dark-secondary to-dbeats-dark-secondary hover:nm-inset-dbeats-dark-secondary "
-                                  >
-                                    <img
-                                      className="h-7 w-7 p-1  mr-1   text-white self-center align-middle items-center     "
-                                      src={maticLogo}
-                                      alt="logo"
-                                    ></img>
-                                    <p className="self-center mx-2"> 200</p>
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </>
-                </div>
-              ) : null}
+              <div className="sticky top-20">
+                <h4 className="text-white  px-2 my-1 ">Recommended Creators</h4>
+
+                <Splide
+                  options={{
+                    type: 'loop',
+                    gap: '1rem',
+                    autoplay: true,
+                    pauseOnHover: false,
+                    arrows: false,
+                    interval: 300,
+                  }}
+                >
+                  {verifiedUser
+                    ? verifiedUser.map((verifieduser, i) => {
+                        return (
+                          <SplideSlide className="px-2" key={i} data-splide-interval="1000">
+                            <ProfileCard user={verifieduser} />
+                          </SplideSlide>
+                        );
+                      })
+                    : null}
+                </Splide>
+              </div>
             </div>
           </div>
         </div>
       </div>
-      <Modal
-        isOpen={modalIsOpen}
-        onAfterOpen={afterOpenModal}
-        onRequestClose={closeModal}
-        style={customStyles}
-        contentLabel="Example Modal"
-      >
-        <div className="  p-3 text-white">
-          <button onClick={closeModal}>close</button>
-
-          <div className="flex text-sm text-gray-600 ">
-            <label
-              htmlFor="file-upload3"
-              className="px-2 text-center relative cursor-pointer bg-white rounded-md font-medium text-dbeats-light hover:text-blue-500 focus-within:outline-none focus-within:ring-0 focus-within:ring-offset-2 focus-within:ring-blue-500"
-            >
-              <span id="ad-label" className="text-center">
-                Choose Ad Image
-              </span>
-              <input
-                id="file-upload3"
-                type="file"
-                name="adImageFile"
-                accept=".jpg,.png,.jpeg"
-                onChange={onVideoFileChange}
-                className="sr-only "
-              />
-            </label>
-            <p className="pl-1"> </p>
-          </div>
-
-          <>
-            <img id="adImage" className="w-max h-52 mt-2 hidden"></img>
-
-            <div className="  my-3 rounded-3xl group w-max ml-2 p-1  mx-1 justify-center  cursor-pointer bg-gradient-to-br from-dbeats-dark-alt to-dbeats-dark-primary  nm-flat-dbeats-dark-primary   hover:nm-inset-dbeats-dark-primary          flex items-center   font-medium          transform-gpu  transition-all duration-300 ease-in-out ">
-              <span className="  text-white    flex p-1 rounded-3xl bg-gradient-to-br from-dbeats-dark-secondary to-dbeats-dark-secondary hover:nm-inset-dbeats-dark-secondary ">
-                <img
-                  className="h-7 w-7 p-1  mr-1   text-white self-center align-middle items-center     "
-                  src={maticLogo}
-                  alt="logo"
-                ></img>
-                <p className="self-center mx-2 ">200</p>
-              </span>
-            </div>
-          </>
-        </div>
-      </Modal>
     </>
   );
 };

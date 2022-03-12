@@ -62,6 +62,8 @@ const ProfileDetails = ({ setSharable_data, tabname, urlUsername, user, setShow,
   const [displayName, setDisplayName] = useState(user.name);
 
   const myData = JSON.parse(window.localStorage.getItem('user'));
+  // console.log(myData.username);
+  // console.log(user.username);
 
   useEffect(() => {
     let value = JSON.parse(window.localStorage.getItem('user'));
@@ -129,11 +131,13 @@ const ProfileDetails = ({ setSharable_data, tabname, urlUsername, user, setShow,
       case 'followers':
         break;
       default:
-        navigate.push(`/profile/${urlUsername}/posts`);
+        // navigate.push(`/profile/${urlUsername}`);
         setTabIndex(0);
     }
     // eslint-disable-next-line
   }, [tabname]);
+
+  console.log(navigate);
 
   const get_User = async () => {
     await axios.get(`${process.env.REACT_APP_SERVER_URL}/user/${urlUsername}`).then((value) => {
@@ -195,7 +199,7 @@ const ProfileDetails = ({ setSharable_data, tabname, urlUsername, user, setShow,
         url: `${process.env.REACT_APP_SERVER_URL}/user/follow`,
         headers: {
           'content-type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
+          'auth-token': localStorage.getItem('authtoken'),
         },
         data: followData,
       })
@@ -217,7 +221,7 @@ const ProfileDetails = ({ setSharable_data, tabname, urlUsername, user, setShow,
         url: `${process.env.REACT_APP_SERVER_URL}/user/unfollow`,
         headers: {
           'content-type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
+          'auth-token': localStorage.getItem('authtoken'),
         },
         data: followData,
       })
@@ -246,6 +250,10 @@ const ProfileDetails = ({ setSharable_data, tabname, urlUsername, user, setShow,
       method: 'POST',
       url: `${process.env.REACT_APP_SERVER_URL}/user/unpin`,
       data: UnPinningData,
+      headers: {
+        'content-type': 'application/json',
+        'auth-token': localStorage.getItem('authtoken'),
+      },
     })
       .then(() => {
         let value = [];
@@ -271,6 +279,10 @@ const ProfileDetails = ({ setSharable_data, tabname, urlUsername, user, setShow,
       method: 'POST',
       url: `${process.env.REACT_APP_SERVER_URL}/user/pinned`,
       data: PinningData,
+      headers: {
+        'content-type': 'application/json',
+        'auth-token': localStorage.getItem('authtoken'),
+      },
     })
       .then(() => {
         setPinnedData((prevData) => [...prevData, pinnedUser]);
@@ -281,11 +293,15 @@ const ProfileDetails = ({ setSharable_data, tabname, urlUsername, user, setShow,
   };
 
   const SendVerificationMail = () => {
-    let data = { email: user.email };
+    let data = { email: myData.email };
     axios({
       method: 'POST',
       url: `${process.env.REACT_APP_SERVER_URL}/user/send_verify_email`,
       data: data,
+      headers: {
+        'content-type': 'application/json',
+        'auth-token': localStorage.getItem('authtoken'),
+      },
     })
       .then(() => {
         setIsMailVerified(true);
@@ -325,10 +341,10 @@ const ProfileDetails = ({ setSharable_data, tabname, urlUsername, user, setShow,
 
   return (
     <div className={`${darkMode && 'dark'}   h-max lg:col-span-5 col-span-6 w-full   `}>
-      <div id="display_details" className="h-full 2xl:pt-16 lg:pt-12">
+      <div id="display_details" className="h-full 2xl:pt-16 lg:pt-12 pt-16">
         {!isMailVerified && privateUser ? (
           <div
-            className="bg-red-100 border-t-4 border-red-500 rounded-b text-red-900 px-4 py-2 shadow-md"
+            className="bg-dbeats-dark-primary border-t-2 border-red-500 rounded-b text-red-900 px-4 py-2  shadow-md"
             role="alert"
           >
             <div className="flex items-center justify-between px-4">
@@ -347,7 +363,7 @@ const ProfileDetails = ({ setSharable_data, tabname, urlUsername, user, setShow,
                 </div>
               </div>
               <div
-                className="w-30 bg-red-500 rounded-md cursor-pointer text-white px-4 py-2 font-semibold"
+                className="w-30 bg-dbeats-dark-alt rounded  cursor-pointer text-red-500 px-4 py-1    hover:bg-red-500 hover:text-white"
                 onClick={SendVerificationMail}
               >
                 Send Verification Mail
@@ -380,7 +396,7 @@ const ProfileDetails = ({ setSharable_data, tabname, urlUsername, user, setShow,
                   <div className="dark:text-white  text-dbeats-dark-alt 2xl:py-4 lg:py-2.5    md:py-3 lg:mx-0 px-10 lg:px-10 md:px-4 ">
                     <div className="flex w-max lg:pt-0 items-center ">
                       <span className="font-bold 2xl:text-xl lg:text-xl md:text-xl mr-3 font-GTWalsheimPro">
-                        {displayName}
+                        {user.name}
                       </span>
                       {myData && !privateUser ? (
                         <button
@@ -530,7 +546,7 @@ const ProfileDetails = ({ setSharable_data, tabname, urlUsername, user, setShow,
                         ////console.log(playbackUser)
                         return (
                           <div key={i}>
-                            <AnnouncementCard post={post} index={i} username={user.username} />
+                            <AnnouncementCard privateUser={privateUser} post={post} index={i} username={user.username} />
                           </div>
                         );
                       })}
@@ -553,6 +569,7 @@ const ProfileDetails = ({ setSharable_data, tabname, urlUsername, user, setShow,
                           return (
                             <div key={i}>
                               <CarouselCard
+                              privateUser={privateUser}
                                 videono={i}
                                 playbackUserData={playbackUser}
                                 index={user.videos.length - 1 - i}
@@ -581,6 +598,7 @@ const ProfileDetails = ({ setSharable_data, tabname, urlUsername, user, setShow,
                           return (
                             <div key={i} className="w-full">
                               <TrackCard
+                              privateUser={privateUser}
                                 trackno={i}
                                 track={track}
                                 index={i}

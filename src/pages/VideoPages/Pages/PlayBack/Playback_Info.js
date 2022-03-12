@@ -1,6 +1,6 @@
-import { Web3Provider } from '@ethersproject/providers';
+//import { Web3Provider } from '@ethersproject/providers';
 import { Menu, Transition } from '@headlessui/react';
-import SuperfluidSDK from '@superfluid-finance/js-sdk';
+//import SuperfluidSDK from '@superfluid-finance/js-sdk';
 import axios from 'axios';
 import moment from 'moment';
 import React, { Fragment, useEffect, useState } from 'react';
@@ -14,12 +14,12 @@ import PageNotFound from '../../../../component/PageNotFound/PageNotFound';
 import VideoPlayer from '../../../../component/VideoPlayer/VideoPlayer';
 import animationDataNotFound from '../../../../lotties/error-animation.json';
 import RecommendedCard from './RecommendedCard';
-import dbeatsLogoBnW from '../../../../assets/images/Logo/logo-blacknwhite.png';
+//import dbeatsLogoBnW from '../../../../assets/images/Logo/logo-blacknwhite.png';
 import SuperfanModal from '../../../../component/Modals/SuperfanModal/superfan-modal';
 
-import maticLogo from '../../../../assets/graphics/polygon-matic-logo.svg';
-import Web3 from 'web3';
-import { Image } from 'react-img-placeholder';
+//import maticLogo from '../../../../assets/graphics/polygon-matic-logo.svg';
+//import Web3 from 'web3';
+//import { Image } from 'react-img-placeholder';
 
 // import {Helmet} from "react-helmet";
 
@@ -66,11 +66,11 @@ const PlayBackInfo = (props) => {
   const handleClose = () => setShow(false);
   const handleShow = () => setShow(true);
 
-  const [showBuyCrypto, setShowBuyCrypto] = useState(false);
-  const buyCrypto = () => setShowBuyCrypto(!showBuyCrypto);
+  // const [showBuyCrypto, setShowBuyCrypto] = useState(false);
+  // const buyCrypto = () => setShowBuyCrypto(!showBuyCrypto);
 
-  const [showRecurring, setShowRecurring] = useState(false);
-  const toggleRecurring = () => setShowRecurring(!showRecurring);
+  // const [showRecurring, setShowRecurring] = useState(false);
+  // const toggleRecurring = () => setShowRecurring(!showRecurring);
 
   const [show, setShow] = useState(false);
 
@@ -94,6 +94,8 @@ const PlayBackInfo = (props) => {
   // const sf = new SuperfluidSDK.Framework({
   //   ethers: new Web3Provider(window.ethereum),
   // });
+  console.log(user);
+  console.log(props);
 
   const trackFollowers = () => {
     setLoader(false);
@@ -107,7 +109,7 @@ const PlayBackInfo = (props) => {
         url: `${process.env.REACT_APP_SERVER_URL}/user/follow`,
         headers: {
           'content-type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
+          'auth-token': localStorage.getItem('authtoken'),
         },
         data: followData,
       })
@@ -128,7 +130,7 @@ const PlayBackInfo = (props) => {
         url: `${process.env.REACT_APP_SERVER_URL}/user/unfollow`,
         headers: {
           'content-type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
+          'auth-token': localStorage.getItem('authtoken'),
         },
         data: followData,
       })
@@ -302,7 +304,7 @@ const PlayBackInfo = (props) => {
         url: `${process.env.REACT_APP_SERVER_URL}/user/reactions`,
         headers: {
           'content-type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
+          'auth-token': localStorage.getItem('authtoken'),
         },
         data: reactionData,
       })
@@ -369,7 +371,7 @@ const PlayBackInfo = (props) => {
         url: `${process.env.REACT_APP_SERVER_URL}/user/removeuserreaction`,
         headers: {
           'content-type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
+          'auth-token': localStorage.getItem('authtoken'),
         },
         data: reactionData,
       })
@@ -419,6 +421,7 @@ const PlayBackInfo = (props) => {
         const videoDetails = {
           videousername: `${props.video_username}`,
           videoindex: `${props.video_id}`,
+          viewed_user: `${user.username}`,
         };
 
         axios({
@@ -426,7 +429,7 @@ const PlayBackInfo = (props) => {
           url: `${process.env.REACT_APP_SERVER_URL}/user/views`,
           headers: {
             'content-type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
+            'auth-token': localStorage.getItem('authtoken'),
           },
           data: videoDetails,
         });
@@ -437,37 +440,37 @@ const PlayBackInfo = (props) => {
 
   ////console.log(arrayData);
 
-  const testFlow = async (amount) => {
-    const walletAddress = await window.ethereum.request({
-      method: 'eth_requestAccounts',
-      params: [
-        {
-          eth_accounts: {},
-        },
-      ],
-    });
-    const sf = new SuperfluidSDK.Framework({
-      ethers: new Web3Provider(window.ethereum),
-    });
-    await sf.initialize();
+  // const testFlow = async (amount) => {
+  //   const walletAddress = await window.ethereum.request({
+  //     method: 'eth_requestAccounts',
+  //     params: [
+  //       {
+  //         eth_accounts: {},
+  //       },
+  //     ],
+  //   });
+  //   const sf = new SuperfluidSDK.Framework({
+  //     ethers: new Web3Provider(window.ethereum),
+  //   });
+  //   await sf.initialize();
 
-    const carol2 = sf.user({
-      address: walletAddress[0],
+  //   const carol2 = sf.user({
+  //     address: walletAddress[0],
 
-      // fDAIx token, which is a test Super Token on Goerli network  0xF2d68898557cCb2Cf4C10c3Ef2B034b2a69DAD00
-      //MATICx Tokens 0x96B82B65ACF7072eFEb00502F45757F254c2a0D4
-      token: '0x96B82B65ACF7072eFEb00502F45757F254c2a0D4',
-    });
-    let finalAmount = 385802469135 * amount;
-    await carol2.flow({
-      recipient: '0x7095b5921592D02C446C2C7bEF145D441Ab270ff',
-      // This flow rate is equivalent to 1 tokens per month, for a token with 18 decimals.
-      flowRate: finalAmount.toString(),
-    });
+  //     // fDAIx token, which is a test Super Token on Goerli network  0xF2d68898557cCb2Cf4C10c3Ef2B034b2a69DAD00
+  //     //MATICx Tokens 0x96B82B65ACF7072eFEb00502F45757F254c2a0D4
+  //     token: '0x96B82B65ACF7072eFEb00502F45757F254c2a0D4',
+  //   });
+  //   let finalAmount = 385802469135 * amount;
+  //   await carol2.flow({
+  //     recipient: '0x7095b5921592D02C446C2C7bEF145D441Ab270ff',
+  //     // This flow rate is equivalent to 1 tokens per month, for a token with 18 decimals.
+  //     flowRate: finalAmount.toString(),
+  //   });
 
-    //const details = await carol2.details();
-    //console.log(details.cfa.flows.outFlows[0]);
-  };
+  //   //const details = await carol2.details();
+  //   //console.log(details.cfa.flows.outFlows[0]);
+  // };
 
   return (
     <>
@@ -505,7 +508,7 @@ const PlayBackInfo = (props) => {
                       ) : null}
                       {time ? (
                         <p className="  2xl:text-lg lg:text-xs text-md text-gray-400 pb-4">
-                          {userData.videos.views ? userData.videos.views : '0'} views{' '}
+                          {userData.videos.views ? userData.videos.views.length : '0'} views{' '}
                           <span className=" mx-1">&#183;</span>
                           {time}
                         </p>
@@ -530,11 +533,15 @@ const PlayBackInfo = (props) => {
                               onClick={handleShowSubscriptionModal}
                               className={
                                 footerData.superfan_data
-                                  ? ' dark:bg-dbeats-dark-primary border border-dbeats-light dark:hover:bg-dbeats-light p-1 2xl:text-lg lg:text-sm text-md  rounded-sm 2xl:px-4 px-4 lg:px-2      mr-3 font-semibold text-white   '
+                                  ? ' flex dark:bg-dbeats-dark-primary border border-dbeats-light dark:hover:bg-dbeats-light p-1 2xl:text-lg lg:text-sm text-md  rounded-sm 2xl:px-4 px-4 lg:px-2      mr-3 font-semibold text-white   '
                                   : 'hidden'
                               }
                             >
-                              <span className={`${footerData.superfan_data ? '' : 'hidden'}`}>
+                              <span
+                                className={`${
+                                  footerData.superfan_data ? '' : 'hidden'
+                                } whitespace-nowrap  flex`}
+                              >
                                 Become a Superfan
                               </span>
                             </button>
@@ -542,9 +549,11 @@ const PlayBackInfo = (props) => {
                         ) : (
                           <Link
                             to="/signup"
-                            className="bg-dbeats-light  p-1 2xl:text-lg lg:text-sm text-md  rounded-sm 2xl:px-4 px-4 lg:px-2 mr-3 font-semibold text-white "
+                            className="bg-dbeats-light flex whitespace-nowrap w-max p-1 2xl:text-lg lg:text-sm text-md  rounded-sm 2xl:px-4 px-4 lg:px-2 mr-3 font-semibold text-white "
                           >
-                            <span>Login to Subscribe & Become a SuperFan</span>
+                            <span className="flex whitespace-nowrap">
+                              Login to Subscribe & Become a SuperFan
+                            </span>
                           </Link>
                         )}
                       </div>
@@ -558,90 +567,95 @@ const PlayBackInfo = (props) => {
                       <br />
                       <p className="2xl:text-base  text-base lg:text-sm"> SHARE</p>
                     </div>
+                    {user ? (
+                      <>
+                        <div className="  text-center">
+                          <i
+                            className={
+                              userreact === 'like'
+                                ? 'cursor-pointer fas fa-heart mx-3 text-red-700 animate-pulse'
+                                : 'cursor-pointer fas fa-heart opacity-20 mx-3 hover:text-red-300  hover:opacity-100'
+                            }
+                            onClick={() => handlereaction('like')}
+                          ></i>
+                          <br />
+                          <p className="text-base">{like}</p>
+                        </div>
+                        <div className="  text-center">
+                          <i
+                            className={
+                              userreact === 'dislike'
+                                ? 'cursor-pointer fas fa-heart-broken mx-3   text-purple-500'
+                                : 'cursor-pointer fas fa-heart-broken opacity-20 mx-3 hover:text-purple-300 hover:opacity-100'
+                            }
+                            onClick={() => handlereaction('dislike')}
+                          ></i>
+                          <br />
+                          <p className="text-base">{dislike}</p>
+                        </div>
+                        <div className="  text-center">
+                          <i
+                            className={
+                              userreact === 'happy'
+                                ? 'cursor-pointer far fa-laugh-squint mx-3 text-yellow-500 '
+                                : 'cursor-pointer far fa-laugh-squint opacity-20 mx-3 hover:text-yellow-200  hover:opacity-100'
+                            }
+                            onClick={() => handlereaction('happy')}
+                          ></i>{' '}
+                          <br />
+                          <p className="text-base"> {happy}</p>
+                        </div>
+                        <div className="  text-center">
+                          <i
+                            className={
+                              userreact === 'angry'
+                                ? 'cursor-pointer far fa-angry  mx-3 text-red-800'
+                                : 'cursor-pointer far fa-angry  opacity-20 mx-3 hover:text-red-300 hover:opacity-100'
+                            }
+                            onClick={() => handlereaction('angry')}
+                          ></i>{' '}
+                          <br />
+                          <p className="text-base"> {angry}</p>
+                        </div>
 
-                    <div className="  text-center">
-                      <i
-                        className={
-                          userreact === 'like'
-                            ? 'cursor-pointer fas fa-heart mx-3 text-red-700 animate-pulse'
-                            : 'cursor-pointer fas fa-heart opacity-20 mx-3 hover:text-red-300  hover:opacity-100'
-                        }
-                        onClick={() => handlereaction('like')}
-                      ></i>
-                      <br />
-                      <p className="text-base">{like}</p>
-                    </div>
-                    <div className="  text-center">
-                      <i
-                        className={
-                          userreact === 'dislike'
-                            ? 'cursor-pointer fas fa-heart-broken mx-3   text-purple-500'
-                            : 'cursor-pointer fas fa-heart-broken opacity-20 mx-3 hover:text-purple-300 hover:opacity-100'
-                        }
-                        onClick={() => handlereaction('dislike')}
-                      ></i>
-                      <br />
-                      <p className="text-base">{dislike}</p>
-                    </div>
-                    <div className="  text-center">
-                      <i
-                        className={
-                          userreact === 'happy'
-                            ? 'cursor-pointer far fa-laugh-squint mx-3 text-yellow-500 '
-                            : 'cursor-pointer far fa-laugh-squint opacity-20 mx-3 hover:text-yellow-200  hover:opacity-100'
-                        }
-                        onClick={() => handlereaction('happy')}
-                      ></i>{' '}
-                      <br />
-                      <p className="text-base"> {happy}</p>
-                    </div>
-                    <div className="  text-center">
-                      <i
-                        className={
-                          userreact === 'angry'
-                            ? 'cursor-pointer far fa-angry  mx-3 text-red-800'
-                            : 'cursor-pointer far fa-angry  opacity-20 mx-3 hover:text-red-300 hover:opacity-100'
-                        }
-                        onClick={() => handlereaction('angry')}
-                      ></i>{' '}
-                      <br />
-                      <p className="text-base"> {angry}</p>
-                    </div>
-
-                    <Menu as="div" className="relative inline-block text-left">
-                      <div>
-                        <Menu.Button>
-                          <i className="fas fa-ellipsis-h opacity-50 mx-2"></i>
-                        </Menu.Button>
-                      </div>
-                      <Transition
-                        as={Fragment}
-                        enter="transition ease-out duration-100"
-                        enterFrom="transform opacity-0 scale-95"
-                        enterTo="transform opacity-100 scale-100"
-                        leave="transition ease-in duration-75"
-                        leaveFrom="transform opacity-100 scale-100"
-                        leaveTo="transform opacity-0 scale-95"
-                      >
-                        <Menu.Items className="  dark:bg-opacity-10 backdrop-filter  backdrop-blur-md absolute right-0 w-56  origin-top-right bg-white dark:bg-dbeats-dark-primary dark:text-gray-50 divide-y divide-gray-100   shadow   focus:outline-none">
-                          <div className="px-1 py-1 ">
-                            {user ? (
-                              <Menu.Item className="w-full text-gray-700 dark:text-gray-50 text-left text-lg pl-2 hover:text-white hover:bg-dbeats-light">
-                                <button
-                                  onClick={() => {
-                                    handleShowPlaylist();
-                                  }}
-                                >
-                                  Add to Playlist
-                                </button>
-                              </Menu.Item>
-                            ) : (
-                              <> </>
-                            )}
+                        <Menu as="div" className="relative inline-block text-left">
+                          <div>
+                            <Menu.Button>
+                              <i className="fas fa-ellipsis-h opacity-50 mx-2"></i>
+                            </Menu.Button>
                           </div>
-                        </Menu.Items>
-                      </Transition>
-                    </Menu>
+                          <Transition
+                            as={Fragment}
+                            enter="transition ease-out duration-100"
+                            enterFrom="transform opacity-0 scale-95"
+                            enterTo="transform opacity-100 scale-100"
+                            leave="transition ease-in duration-75"
+                            leaveFrom="transform opacity-100 scale-100"
+                            leaveTo="transform opacity-0 scale-95"
+                          >
+                            <Menu.Items className="  dark:bg-opacity-10 backdrop-filter  backdrop-blur-md absolute right-0 w-56  origin-top-right bg-white dark:bg-dbeats-dark-primary dark:text-gray-50 divide-y divide-gray-100   shadow   focus:outline-none">
+                              <div className="px-1 py-1 ">
+                                {user ? (
+                                  <Menu.Item className="w-full text-gray-700 dark:text-gray-50 text-left text-lg pl-2 hover:text-white hover:bg-dbeats-light">
+                                    <button
+                                      onClick={() => {
+                                        handleShowPlaylist();
+                                      }}
+                                    >
+                                      Add to Playlist
+                                    </button>
+                                  </Menu.Item>
+                                ) : (
+                                  <> </>
+                                )}
+                              </div>
+                            </Menu.Items>
+                          </Transition>
+                        </Menu>
+                      </>
+                    ) : (
+                      <></>
+                    )}
                   </div>
                 </div>
                 {videoData ? (
