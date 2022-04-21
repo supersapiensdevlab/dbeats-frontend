@@ -4,7 +4,7 @@ import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import Lottie from 'react-lottie';
 import Modal from 'react-modal';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import Billboard from '../../component/Billboard/Billboard-Card';
 import ProfileCard from '../../component/Cards/ProfileCard';
 import Dropdown from '../../component/dropdown.component';
@@ -14,24 +14,21 @@ import MainToolbar from '../../component/Toolbar/main-toolbar';
 import animationData from '../../lotties/gamers.json';
 import ResponsiveCarousel from './Cards/HomeSlider';
 import LiveCard from './Cards/LiveCard';
-import PlayBackCard from './Cards/PlayBackCard';
+import NFTCard from '../Profile/ProfileSections/Store/NFT_Store';
 
+import * as Scroll from 'react-scroll';
+import { loadTrending } from '../../actions/trendingActions';
+import NFTStore from '../Profile/ProfileSections/Store/NFT_Store';
 Modal.setAppElement('#root');
 
 const Home = () => {
+  const dispatch = useDispatch();
   const [activeStreams, setActiveStreams] = useState([]);
   const [slides, setSlides] = useState([]);
   const darkMode = useSelector((darkmode) => darkmode.toggleDarkMode);
-
-  const [arrayData, setArrayData] = useState([]);
-
-  const [latestVideo, setLatestVideo] = useState([]);
-  const [latestTrack, setLatestTrack] = useState([]);
-
-  const user = JSON.parse(window.localStorage.getItem('user'));
-
+  const user = useSelector((state) => state.User.user);
+  const Trending = useSelector((state) => state.Trending);
   const [verifiedUser, setverifiedUser] = useState(null);
-
   const defaultOptions = {
     loop: true,
     autoplay: true,
@@ -40,7 +37,7 @@ const Home = () => {
       preserveAspectRatio: 'xMidYMid slice',
     },
   };
-  const [latestUploads, setLatestUploads] = useState(null);
+  // const [latestUploads, setLatestUploads] = useState(null);
 
   Splide.defaults = {
     type: 'loop',
@@ -61,6 +58,44 @@ const Home = () => {
   const filter = ['All', 'Music', 'Gaming', 'Movies', 'Videos', 'NFT'];
   const [selectedFilter, setSelectedFilter] = useState(filter[0]);
 
+  const [showNewPost, setShowNewPost] = useState(false);
+
+  const [scrollPosition, setScrollPosition] = useState(0);
+  const handleScroll = () => {
+    const position = window.pageYOffset;
+    setScrollPosition(position);
+    if (position > 2000) {
+      setShowNewPost(true);
+    } else {
+      setShowNewPost(false);
+    }
+  };
+
+  useEffect(() => {
+    window.addEventListener('scroll', handleScroll);
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
+
+  const scrollTop = () => {
+    console.log('called');
+    var scroll = Scroll.animateScroll;
+    scroll.scrollToTop({
+      duration: 3000,
+    });
+  };
+
+  // useEffect(() => {
+  //   if (scrollPosition > 1500) {
+  //     const interval = setInterval(() => {
+  //       console.log('Logs every minute');
+  //     }, 1000);
+  //     return () => clearInterval(interval);
+  //   } // This represents the unmount function, in which you need to clear your interval to prevent memory leaks.
+  // }, []);
+
   useEffect(() => {
     let slidesValue = [];
     axios.get(`${process.env.REACT_APP_SERVER_URL}/get_activeusers`).then(async (repos) => {
@@ -77,7 +112,8 @@ const Home = () => {
       }
       setSlides(slidesValue);
     });
-    fetchData();
+    // fetchData();
+    dispatch(loadTrending());
 
     axios.get(`${process.env.REACT_APP_SERVER_URL}/get_verifiedusers`).then(async (repos) => {
       let data = [];
@@ -90,43 +126,43 @@ const Home = () => {
     });
   }, []);
 
-  const fetchData = async () => {
-    const fileRes = await axios.get(`${process.env.REACT_APP_SERVER_URL}/user`);
-    for (let i = 0; i < fileRes.data.length; i++) {
-      if (fileRes.data[i].videos && fileRes.data[i].videos.length > 0) {
-        if (user ? fileRes.data[i].username !== user.username : true)
-          setArrayData((prevState) => [...prevState, fileRes.data[i]]);
-      }
-    }
+  // const fetchData = async () => {
+  //   // const fileRes = await axios.get(`${process.env.REACT_APP_SERVER_URL}/user`);
+  //   // for (let i = 0; i < fileRes.data.length; i++) {
+  //   //   if (fileRes.data[i].videos && fileRes.data[i].videos.length > 0) {
+  //   //     if (user ? fileRes.data[i].username !== user.username : true)
+  //   //       setArrayData((prevState) => [...prevState, fileRes.data[i]]);
+  //   //   }
+  //   // }
 
-    const fetchUploads = await axios.get(`${process.env.REACT_APP_SERVER_URL}/trending`);
-    // console.log(fetchUploads.data.trending);
-    if (fetchUploads.data.trending) {
-      let trending = [];
-      let fetchedData = fetchUploads.data.trending.reverse();
+  //   const fetchUploads = await axios.get(`${process.env.REACT_APP_SERVER_URL}/trending`);
+  //   // console.log(fetchUploads.data.trending);
+  //   if (fetchUploads.data.trending) {
+  //     let trending = [];
+  //     let fetchedData = fetchUploads.data.trending.reverse();
 
-      for (let i = 0; i < fetchedData.length; i++) {
-        trending.push(fetchedData[i]);
-      }
-      setLatestVideo(trending);
-      {
-        //console.log(trending);
-      }
-      setLatestUploads(true);
-    }
+  //     for (let i = 0; i < fetchedData.length; i++) {
+  //       trending.push(fetchedData[i]);
+  //     }
+  //     setLatestVideo(trending);
+  //     {
+  //       //console.log(trending);
+  //     }
+  //     // setLatestUploads(true);
+  //   }
 
-    if (fetchUploads.data.latest_tracks) {
-      let data = [];
-      let fetchedData = fetchUploads.data.latest_tracks.reverse();
-      for (let i = 0; i < fetchedData.length; i++) {
-        if (!data.some((el) => el.username === fetchedData[i].username)) {
-          data.push(fetchedData[i]);
-        }
-      }
-      setLatestTrack(data);
-      setLatestUploads(true);
-    }
-  };
+  //   // if (fetchUploads.data.latest_tracks) {
+  //   //   let data = [];
+  //   //   let fetchedData = fetchUploads.data.latest_tracks.reverse();
+  //   //   for (let i = 0; i < fetchedData.length; i++) {
+  //   //     if (!data.some((el) => el.username === fetchedData[i].username)) {
+  //   //       data.push(fetchedData[i]);
+  //   //     }
+  //   //   }
+  //   //   setLatestTrack(data);
+  //   //   setLatestUploads(true);
+  //   // }
+  // };
 
   return (
     <>
@@ -324,11 +360,36 @@ const Home = () => {
                         </span>
                       </button>
                     </div>
+                    {showNewPost ? (
+                      <div className="2xl:w-1/3 lg:w-1/3 w-screen 2xl:ml-5 cursor-pointer flex justify-center items-center text-xs 2xl:text-base fixed 2xl:top-16 lg:top-12 top-16 z-10 h-max ">
+                        <button
+                          className="w-max flex 2xl:px-3 2xl:py-2 px-2 py-1 rounded-lg text-black dark:text-white  rounded-3xl bg-gradient-to-br from-dbeats-dark-secondary to-dbeats-dark-secondary hover:nm-inset-dbeats-dark-secondary"
+                          onClick={scrollTop}
+                        >
+                          <p className="font-bold w-full self-center">New Post</p>
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-6 w-6 2xl:ml-1 ml-0.5"
+                            viewBox="0 0 20 20"
+                            fill="currentColor"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                        </button>
+                      </div>
+                    ) : (
+                      <></>
+                    )}
                   </div>
+
                   <div className="my-2">
                     <div
                       className="mt-10 animate-spin rounded-full h-7 w-7 mx-auto border-t-2 border-b-2 bg-gradient-to-r from-green-400 to-blue-500 "
-                      hidden={latestVideo.length > 0 ? true : false}
+                      hidden={!Trending.loading ? true : false}
                     ></div>{' '}
                     {/* {arrayData.map((playbackUser, i) => {
                       return (
@@ -337,14 +398,16 @@ const Home = () => {
                         </div>
                       );
                     })} */}
-                    {latestVideo.map((playbackUser, i) => {
-                      return (
-                        <div key={i}>
-                          <PlayBackCard darkMode={darkMode} playbackUserData={playbackUser} />
-                          {/* {i % 3 == 0 ? <Billboard user={user}></Billboard> : null} */}
-                        </div>
-                      );
-                    })}
+                    <NFTStore></NFTStore>
+                    {/* {Trending.trending &&
+                      Trending.trending.map((playbackUser, i) => {
+                        return (
+                          <div key={i}>
+                            {/* <PlayBackCard darkMode={darkMode} playbackUserData={playbackUser} /> */}
+                    {/* {i % 3 == 0 ? <Billboard user={user}></Billboard> : null} */}
+                    {/* </div>
+                        );
+                      })} */}
                   </div>
                 </div>
               </div>
@@ -363,7 +426,6 @@ const Home = () => {
               <div className="my-4 ">
                 <FeedbackForm className="z-500" />
               </div>
-
               <div className="sticky top-20">
                 <h4 className="text-white  px-2 my-1 ">Recommended Creators</h4>
 

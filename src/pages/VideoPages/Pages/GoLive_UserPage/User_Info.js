@@ -2,7 +2,7 @@ import axios from 'axios';
 import React, { Fragment, useEffect, useState } from 'react';
 import { Spinner } from 'react-bootstrap';
 import Modal from 'react-modal';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { MultiStreamData } from '../../../../assets/Data';
 import Dropdown from '../../../../component/dropdown.component';
 import { makeStorageClient } from '../../../../component/uploadHelperFunction';
@@ -12,7 +12,8 @@ import LiveChat from '../LivePublicPage/LiveChat';
 import { io } from 'socket.io-client';
 
 const UserInfo = (props) => {
-  const user = JSON.parse(window.localStorage.getItem('user'));
+  const user = useSelector((state) => state.User.user);
+  const dispatch = useDispatch();  
   const darkMode = useSelector((darkmode) => darkmode.toggleDarkMode);
   const [playbackUrl, setPlaybackUrl] = useState('');
   const [StreamKey, setKey] = useState('');
@@ -76,7 +77,7 @@ const UserInfo = (props) => {
   const [livestreamViews, setLivestreamViews] = useState(0);
 
   useEffect(() => {
-    if (user.multistream_platform) {
+    if (user && user.multistream_platform) {
       ////console.log("hello",user.multistream_platform)
       let new_array = [];
       for (let i = 0; i < user.multistream_platform.length; i++) {
@@ -371,11 +372,6 @@ const UserInfo = (props) => {
               'auth-token': localStorage.getItem('authtoken'),
             },
           });
-          if (res.data == 'success') {
-            axios.get(`${process.env.REACT_APP_SERVER_URL}/user/${user.username}`).then((value) => {
-              window.localStorage.setItem('user', JSON.stringify(value.data));
-            });
-          }
         })
         .catch((err) => {
           setUploadingFile(false);
@@ -407,14 +403,13 @@ const UserInfo = (props) => {
   // }
 
   // console.log(user);
-useEffect(()=>{
-if(!user){
-  window.location.href='/signup'
-}
-},[])
+  useEffect(() => {
+    if (!user) {
+      window.location.href = '/';
+    }
+  }, []);
 
-  return (
-    user?(
+  return user ? (
     <Fragment className={`${darkMode && 'dark'}`}>
       <div className="grid sm:grid-cols-1 lg:grid-cols-3 grid-flow-row  pb-50  lg:ml-12  bg-gradient-to-b from-blue-50 via-blue-50 to-white  dark:bg-gradient-to-b dark:from-dbeats-dark-secondary  dark:to-dbeats-dark-primary">
         <div className=" lg:col-span-2 pt-3 mt-10">
@@ -423,41 +418,43 @@ if(!user){
             {user ? (
               <VideoPlayer playbackUrl={playbackUrl} creatorData={user} footer={false} />
             ) : null}
-            {user.livepeer_data.isActive && (
-              <div className="dark:text-dbeats-white mt-3 ml-2">
-                <p className="text-md">To create NFT start Recording</p>
-                <div className="flex justify-between items-center w-full pt-2 text-white">
-                  <div className="w-2/3">
-                    <button
-                      className={`text-center rounded-md w-1/4 
+            {user.livepeer_data
+              ? user.livepeer_data.isActive && (
+                  <div className="dark:text-dbeats-white mt-3 ml-2">
+                    <p className="text-md">To create NFT start Recording</p>
+                    <div className="flex justify-between items-center w-full pt-2 text-white">
+                      <div className="flex w-1/2">
+                        <button
+                          className={`text-center rounded-md w-60 
                     ${recording ? 'bg-green-300' : 'bg-green-600'} mx-2 py-2`}
-                      disabled={recording}
-                      onClick={startRecording}
-                    >
-                      Start Recording
-                    </button>
-                    {recording ? (
-                      <button
-                        className={`text-center rounded-md w-1/4 
+                          disabled={recording}
+                          onClick={startRecording}
+                        >
+                          Start Recording
+                        </button>
+                        {recording ? (
+                          <button
+                            className={`text-center rounded-md w-60 
                     ${!recording ? 'bg-red-300' : 'bg-red-600'} mx-2 py-2`}
-                        disabled={!recording}
-                        onClick={stopRecording}
-                      >
-                        Stop Recording
-                      </button>
-                    ) : (
-                      <></>
-                    )}
+                            disabled={!recording}
+                            onClick={stopRecording}
+                          >
+                            Stop Recording
+                          </button>
+                        ) : (
+                          <></>
+                        )}
+                      </div>
+                      <p className={`text-white text-lg text-center pr-2 flex flex-col`}>
+                        <span className={` text-${viewColor}  ${viewAnimate} font-bold`}>
+                          {livestreamViews}
+                        </span>
+                        viewers
+                      </p>
+                    </div>
                   </div>
-                  <p className={`text-white text-lg text-center pr-2 flex `}>
-                    <span className={` text-${viewColor}  ${viewAnimate} font-bold mr-2`}>
-                      {livestreamViews}
-                    </span>
-                    viewers
-                  </p>
-                </div>
-              </div>
-            )}
+                )
+              : null}
           </div>
         </div>
         {user.livepeer_data.isActive ? (
@@ -926,7 +923,7 @@ if(!user){
         </main>
       </Modal>
 
-      {user.livepeer_data.isActive && (
+      {/* {user.livepeer_data.isActive && (
         <div className="text-sm ml-20 col-span-1  2xl:mt-10 lg:mt-4 mb-6 max-w-md">
           <div className="bg-white dark:bg-dbeats-dark-primary dark:text-dbeats-white w-80 border border-dbeats-light border-opacity-40  2xl:w-full  p-5 rounded text-sm sm:lg:text-xl shadow mt-6  lg:ml-0 ">
             <div className="grid grid-cols-2">
@@ -1098,7 +1095,7 @@ if(!user){
             </>
           </div>
         </div>
-      )}
+      )} */}
       <Modal
         isOpen={showPriceModal}
         className="h-max lg:w-1/3 w-5/6 mx-auto 2xl:mt-24 lg:mt-16 mt-24 shadow-xl bg-white"
@@ -1113,7 +1110,8 @@ if(!user){
         </h2>
       </Modal>
     </Fragment>
-    ):<></>
+  ) : (
+    <></>
   );
 };
 

@@ -11,20 +11,27 @@ import CircleLogoDark from '../../assets/images/dark-logo-svg.svg';
 import CircleLogo from '../../assets/images/dbeats-logo.png';
 import logo from '../../assets/images/white-logo.svg';
 import useWeb3Modal from '../../hooks/useWeb3Modal';
+import getTorus from '../../hooks/useWeb3Modal';
+
 import moment from 'moment';
 import Toggle from '../toggle.component';
 import classes from './Navbar.module.css';
 import person from '../../assets/images/profile.svg';
+import Web3 from 'web3';
+import { clearProvider } from '../../actions/web3Actions';
+import { useHistory } from 'react-router-dom';
+import { web3Login } from '../../actions/userActions';
 
 moment().format();
 
 const NavBar = () => {
   // eslint-disable-next-line no-unused-vars
-  const [provider, loadWeb3Modal, logoutOfWeb3Modal] = useWeb3Modal();
+  const [loadWeb3Modal, logoutOfWeb3Modal, logoutweb3] = useWeb3Modal();
+  const provider = useSelector((state) => state.web3Reducer.provider);
 
   const [notification, setNotification] = useState([]);
 
-  const user = JSON.parse(window.localStorage.getItem('user'));
+  const user = useSelector((state) => state.User.user);
 
   const wrapperRef = useRef(null);
 
@@ -46,12 +53,9 @@ const NavBar = () => {
 
   // Auth functions
   const handleLogout = () => {
-    window.location.href = '/';
-    window.localStorage.clear();
-    const timer = setTimeout(() => {
-      logoutOfWeb3Modal();
-    }, 2000);
-    return () => clearTimeout(timer);
+    logoutweb3();
+
+    // window.location.href = '/';
   };
 
   const [toggled, setToggled] = useState(JSON.parse(window.localStorage.getItem('darkmode')));
@@ -254,6 +258,28 @@ const NavBar = () => {
       </div>
     );
   };
+
+  const [account, setAccount] = useState(null);
+  const history = useHistory();
+  const login = async () => {
+    if (!provider) {
+      const web3 = new Web3(await loadWeb3Modal());
+      const address = (await web3.eth.getAccounts())[0];
+      const balance = await web3.eth.getBalance(address);
+      setAccount(address);
+      //console.log('USER LOGGED IN', address, balance);
+      if (address) {
+        console.log('ADDRESS', address);
+        console.log('PROVIDER', provider);
+      }
+    } else if (account) {
+      await logoutOfWeb3Modal();
+      dispatch(clearProvider());
+      console.log('logged ou!!!');
+      setAccount(null);
+    }
+  };
+
   return (
     <>
       <div className={`${darkMode && 'dark'}`}>
@@ -353,7 +379,7 @@ const NavBar = () => {
               </svg>
             </div>
             <div className="flex items-center">
-              <a href="/" className="  self-center cursor-pointer sm:flex hidden">
+              <Link to="/" className="  self-center cursor-pointer sm:flex hidden">
                 <img
                   src={logo}
                   alt="dbeats_logo"
@@ -365,8 +391,8 @@ const NavBar = () => {
                   className="h-10 lg:h-7 2xl:h-10 w-max hidden dark:block"
                 ></img>
                 <span className="mr-5 text-lg font-bold   sm:ml-2"> </span>
-              </a>
-              <a href="/" className="flex self-center cursor-pointer sm:hidden ">
+              </Link>
+              <Link to="/" className="flex self-center cursor-pointer sm:hidden ">
                 <img
                   src={CircleLogo}
                   alt="dbeats_logo"
@@ -378,7 +404,7 @@ const NavBar = () => {
                   className="h-10 lg:h-7 2xl:h-10 w-max hidden dark:block  "
                 ></img>
                 <span className="mr-5 text-lg font-bold   sm:ml-2"> </span>
-              </a>
+              </Link>
               <p
                 className="px-2 -ml-3.5 flex pb-0.5 mt-1 text-xs text-white dark:text-dbeats-light 
               bg-dbeats-light dark:bg-dbeats-alt border border-white dark:border-dbeats-light font-semibold rounded-lg"
@@ -617,8 +643,8 @@ const NavBar = () => {
                 </Link>
               </div>
             ) : (
-              <Link
-                to="/signup"
+              <div
+                onClick={login}
                 className="shadow-sm p-0.5 dark:bg-gradient-to-r 
                 dark:from-dbeats-secondary-light dark:to-dbeats-light  ml-2 md:mx-2 md:ml-0 transform-gpu  transition-all duration-300 ease-in-out my-1 
                 cursor-pointer relative inline-flex items-center justify-center   mr-2 overflow-hidden text-sm font-medium text-gray-900 rounded-3xl 
@@ -627,10 +653,10 @@ const NavBar = () => {
                 <div className=" px-5 py-1   bg-gradient-to-br from-dbeats-light to-dbeats-secondary-light hover:nm-inset-dbeats-secondary-light  rounded-3xl flex self-center align-middle">
                   <i className="fas fa-sign-in-alt text-xs lg:text-sm 2xl:text-lg self-center mr-2 hidden md:block align-middle justify-center"></i>{' '}
                   <p className=" text-xs lg:text-sm 2xl:text-lg self-center mr-2 hidden md:block align-middle justify-center">
-                    signup
+                    Connect Wallet
                   </p>
                 </div>
-              </Link>
+              </div>
             )}
           </div>
         </div>

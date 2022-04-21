@@ -3,18 +3,17 @@ import Noty from 'noty';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Cropper from 'react-easy-crop';
 import Modal from 'react-modal';
+import { useDispatch, useSelector } from 'react-redux';
 import { Web3Storage } from 'web3.storage/dist/bundle.esm.min.js';
 import getCroppedImg from './cropImage';
 import classes from './style.module.css';
-
+import { loadUser } from '../../../actions/userActions';
 function makeStorageClient() {
   return new Web3Storage({
     token:
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkaWQ6ZXRocjoweDBhNzk3MkY3QTRDNUNkZDJlOENBQzE1RDJCZjJBRUFlQTg1QmM3MzEiLCJpc3MiOiJ3ZWIzLXN0b3JhZ2UiLCJpYXQiOjE2Mjc1MTY1MTgyMjUsIm5hbWUiOiJEQmVhdHMifQ.16-okZlX7RmNcszqLq06lvzDkZ-Z8CHnmAIRXjQ2q5Q',
   });
 }
-
-const user = JSON.parse(window.localStorage.getItem('user'));
 
 const re = /(?:\.([^.]+))?$/;
 
@@ -39,6 +38,8 @@ export const UploadCoverImageModal = ({
   setLoader,
   darkMode,
 }) => {
+  const user = useSelector((state) => state.User.user);
+  const dispatch = useDispatch();
   //image Crop
   const [image, setImage] = useState({ preview: '', raw: '' });
   const wrapperRef = useRef(null);
@@ -139,10 +140,11 @@ export const UploadCoverImageModal = ({
           .post(`${process.env.REACT_APP_SERVER_URL}/user/coverimage`, formData, {
             headers: {
               'content-type': 'multipart/form-data',
-                'auth-token':localStorage.getItem('authtoken')
+              'auth-token': localStorage.getItem('authtoken'),
             },
           })
           .then((res) => {
+            dispatch(loadUser());
             setLoader(true);
             setCoverImage(res.data);
             setImage({
@@ -166,11 +168,11 @@ export const UploadCoverImageModal = ({
   };
 
   return (
-    <div>
+    <div className='relative'>
       <Modal
         isOpen={show}
         className={`${darkMode && 'dark'} h-max min-h-1/4 lg:w-2/5 w-5/6 bg-white  mx-auto 
-        2xl:mt-48 lg:mt-36 mt-32 shadow ring-0 outline-none rounded-md z-20`}
+        absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 shadow ring-0 outline-none rounded-md z-20`}
       >
         <div ref={wrapperRef} className="p-5 w-full">
           <div className="p-4 flex justify-center">
@@ -230,6 +232,8 @@ export const UploadProfileImageModal = ({
   setLoader,
   darkMode,
 }) => {
+  const user = useSelector((state) => state.User.user);
+  const dispatch = useDispatch();
   const [image, setImage] = useState({ preview: '', raw: '' });
   const wrapperRef = useRef(null);
 
@@ -315,7 +319,9 @@ export const UploadProfileImageModal = ({
 
     storeWithProgress('upload cover image').then(() => {
       const formData = new FormData();
-      formData.append('username', user.username);
+      if (user) {
+        formData.append('username',user.username);
+      }
       formData.append('profileImage', profileImage);
       formData.append('imageHash', profileImage_cid);
 
@@ -328,10 +334,11 @@ export const UploadProfileImageModal = ({
           .post(`${process.env.REACT_APP_SERVER_URL}/user/profileimage`, formData, {
             headers: {
               'content-type': 'multipart/form-data',
-                'auth-token':localStorage.getItem('authtoken')
+              'auth-token': localStorage.getItem('authtoken'),
             },
           })
           .then((res) => {
+            dispatch(loadUser());
             setProfileImage(res.data);
             setLoader(true);
             setImage({
@@ -356,11 +363,11 @@ export const UploadProfileImageModal = ({
   };
 
   return (
-    <div>
+    <div className='relative'>
       <Modal
         isOpen={show}
         className={`${darkMode && 'dark'} h-max min-h-1/4 lg:w-2/5 w-5/6 bg-white  mx-auto 
-        2xl:mt-48 lg:mt-36 mt-32 shadow ring-0 outline-none rounded-md z-20`}
+        absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 shadow ring-0 outline-none rounded-md z-20`}
       >
         <div ref={wrapperRef} className="p-5 w-full">
           <div className="p-4 flex justify-center">

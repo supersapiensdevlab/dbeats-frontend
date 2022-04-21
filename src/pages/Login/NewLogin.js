@@ -1,68 +1,137 @@
-import { useState } from 'react';
-import Torus from '@toruslabs/torus-embed';
+import React, { useEffect, useState, useCallback } from 'react';
+import OpenLogin from '@toruslabs/openlogin';
 import Web3 from 'web3';
-import person from '../../assets/images/person.png';
+import Matic from '@maticnetwork/maticjs';
+import Network from '@maticnetwork/meta/network';
 
-function App() {
-  const [account, setAccount] = useState();
-
-  const onClickLogin = async (e) => {
-    e.preventDefault();
-
-    const torus = new Torus({});
-    await torus.init({
-      loginConfig: {
-        // Customize login provider configurations.
-
-        // Customize brand logo, colors, and translation
-        whitelabel: {
-          theme: {
-            isDark: true,
-            colors: {
-              torusBrand1: '#00d3ff',
-            },
-          },
-          logoDark: 'https://tkey.surge.sh/images/Device.svg', // Dark logo for light background
-          logoLight: 'https://tkey.surge.sh/images/Device.svg', // Light logo for dark background
-          topupHide: true,
-          featuredBillboardHide: false,
-          disclaimerHide: false,
-          defaultLanguage: 'en',
-        },
-      },
+const maticClient = {
+  _matic: 'mainnet',
+  _network: 'v1',
+  connect: async (_network, _version) => {
+    const network = new Network(_network, _version);
+    console.log('RPC:', network.Main.RPC, network.Matic.RPC);
+    const matic = new Matic({
+      network: _network,
+      version: _version,
+      parentProvider: new Web3.providers.HttpProvider(
+        'https://mainnet.infura.io/v3/73d0b3b9a4b2499da81c71a2b2a473a9',
+      ),
+      maticProvider: new Web3.providers.HttpProvider(network.Matic.RPC),
     });
+    await matic.initialize();
+    maticClient._matic = matic;
+    maticClient._network = network;
+    return { matic, network };
+  },
+  getClient: async (_network, _version) => {
+    if (maticClient._matic && maticClient._network) {
+      return { matic: maticClient._matic, network: maticClient._network };
+    }
+    return await maticClient.connect(_network, _version);
+  },
+};
 
-    await torus.login();
-    const web3 = new Web3(torus.provider);
-    const address = (await web3.eth.getAccounts())[0];
-    const balance = await web3.eth.getBalance(address);
-    setAccount({ address, balance });
+function Login() {
+  const [loading, setLoading] = useState(false);
+  const [openlogin, setSdk] = useState(undefined);
+  const [walletInfo, setUserAccountInfo] = useState(null);
+
+  const getMaticAccountDetails = useCallback(async (privateKey) => {
+    const { matic, network } = await maticClient.getClient('mainnet', 'v1');
+
+    const tokenAddress = network.Matic.Contracts.Tokens.MaticToken;
+    matic.setWallet(privateKey);
+
+    const account = matic.web3Client.web3.eth.accounts.privateKeyToAccount(privateKey);
+    let address = account.address;
+
+    const balance = await matic.balanceOfERC20(
+      address, //User address
+      tokenAddress, // Token address
+      {
+        parent: false,
+      },
+    );
+    setUserAccountInfo({ balance, address });
+  }, []);
+
+  useEffect(() => {
+    setLoading(true);
+    async function initializeOpenlogin() {
+      const sdkInstance = new OpenLogin({
+        clientId:
+          'BFrU6JsPLNdCdC1jb72ye0Pwc1ViJVl4D9aSqT2qdgPxrUZ79CbwxnhTimVo5cRrXPbGsVWGEYhl0bgIiGhmZc0',
+        network: 'mainnet',
+      });
+      await sdkInstance.init();
+      if (sdkInstance.privKey) {
+        await getMaticAccountDetails(sdkInstance.privKey);
+      }
+      setSdk(sdkInstance);
+      setLoading(false);
+    }
+    initializeOpenlogin();
+  }, [getMaticAccountDetails]);
+
+  async function handleLogin() {
+    setLoading(true);
+    try {
+      const privKey = await openlogin.login({
+        loginProvider: 'google',
+        redirectUrl: `${window.origin}`,
+      });
+      await getMaticAccountDetails(privKey);
+      setLoading(false);
+    } catch (error) {
+      console.log('error', error);
+      setLoading(false);
+    }
+  }
+
+  const handleLogout = async () => {
+    setLoading(true);
+    await openlogin.logout();
+    setLoading(false);
   };
 
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={person} className="App-logo" alt="logo" />
-        {account ? (
-          <div className="App-info">
-            <p>
-              <strong>Address</strong>: {account.address}
-            </p>
-            <p>
-              <strong>Balance</strong>: {account.balance}
-            </p>
+    <>
+      {loading ? (
+        <div>
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              width: '100%',
+              justifyContent: 'center',
+              alignItems: 'center',
+              margin: 20,
+            }}
+          >
+            <h1>....loading</h1>
           </div>
-        ) : (
-          <>
-            <p>You login yet. Login to see your account details.</p>
-            <button className="App-link" onClick={onClickLogin}>
-              Login
-            </button>
-          </>
-        )}
-      </header>
-    </div>
+        </div>
+      ) : (
+        <div>
+          {openlogin && openlogin.privKey ? (
+            <div
+              handleLogout={handleLogout}
+              loading={loading}
+              privKey={openlogin?.privKey}
+              walletInfo={walletInfo}
+            />
+          ) : (
+            <div className="loginContainer">
+              <h1 style={{ textAlign: 'center' }}>Openlogin x Polygon</h1>
+              <div onClick={handleLogin} className="btn">
+                Login
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </>
   );
 }
 
-export default App;
+export default Login;

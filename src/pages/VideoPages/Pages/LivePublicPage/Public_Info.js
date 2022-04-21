@@ -5,6 +5,8 @@ import SuperfluidSDK from '@superfluid-finance/js-sdk';
 import axios from 'axios';
 import moment from 'moment';
 import React, { Fragment, useEffect, useState } from 'react';
+import { Container, Row } from 'react-bootstrap';
+import Modal from 'react-modal';
 // import Modal from 'react-awesome-modal';
 // import { Container, Row } from 'react-bootstrap';
 // import Lottie from 'react-lottie';
@@ -24,6 +26,8 @@ import VideoPlayer from '../../../../component/VideoPlayer/VideoPlayer';
 // import LiveCard from './LiveCard';
 import LiveChat from './LiveChat';
 import { io } from 'socket.io-client';
+import { RadioGroup } from '@headlessui/react';
+import useWeb3Modal from '../../../../hooks/useWeb3Modal';
 
 const PublicInfo = (props) => {
   // const socket = io('http://localhost:800');
@@ -33,12 +37,13 @@ const PublicInfo = (props) => {
 
   let sharable_data = `${process.env.REACT_APP_CLIENT_URL}/live/${props.stream_id}`;
   const darkMode = useSelector((darkmode) => darkmode.toggleDarkMode);
+  const [loadWeb3Modal, logoutOfWeb3Modal, logoutweb3] = useWeb3Modal();
 
   const [userData, setUserData] = useState({});
 
   const [privateUser, setPrivate] = useState(true);
 
-  const user = JSON.parse(window.localStorage.getItem('user'));
+  const user = useSelector((state) => state.User.user); 
   const [time, setTime] = useState(null);
 
   const [playbackUrl, setPlaybackUrl] = useState('');
@@ -53,9 +58,24 @@ const PublicInfo = (props) => {
   const handleClose = () => setShow(false);
   const handleShow = () => setShow(true);
 
+  const [showReport, setShowReport] = useState(false);
+  const handleReportShow = () => setShowReport(true);
+  const handleReportClose = () => setShowReport(false);
+
+  const [showReportSubmitThankyou, setShowReportSubmitThankyou] = useState(false);
+  const handleReportThankyouShow = () => setShowReportSubmitThankyou(true);
+  const handleReportThankyouClose = () => setShowReportSubmitThankyou(false);
+
+  const [showOtherReport, setShowOtherReport] = useState(false);
+  const handleOtherReportShow = () => setShowOtherReport(true);
+  const handleOtherReportClose = () => setShowOtherReport(false);
+
+  const [reportValue, setReportValue] = useState('Nudity or pornography');
+  const [userReportValue, setUserReportValue] = useState('');
+
   const text = 'Copy Link To Clipboard';
   const [buttonText, setButtonText] = useState(text);
-  const [subscribeButtonText, setSubscribeButtonText] = useState('Subscribe');
+  const [subscribeButtonText, setSubscribeButtonText] = useState('Follow');
 
   const [viewColor, setViewColor] = useState('white');
   const [viewAnimate, setViewAnimate] = useState('animate-none');
@@ -63,14 +83,45 @@ const PublicInfo = (props) => {
   // eslint-disable-next-line no-unused-vars
   const [arrayData, setArrayData] = useState([]);
 
+  const handleReportSubmit = () => {
+    let reportData = {
+      reporter: user.username,
+      reported: userData.username,
+      report: reportValue,
+      videoId: 'live',
+    };
+    axios({
+      method: 'POST',
+      url: `${process.env.REACT_APP_SERVER_URL}/user/videoreports`,
+      headers: {
+        'content-type': 'application/json',
+        'auth-token': localStorage.getItem('authtoken'),
+      },
+      data: reportData,
+    })
+      .then((response) => {
+        console.log(response);
+      })
+      .catch(function (error) {
+        console.log(error);
+      });
+    setShowReport(false);
+    setShowOtherReport(false);
+    setShowReportSubmitThankyou(true);
+  };
+
+  const handleInputChange = (e) => {
+    setReportValue(e.target.value);
+  };
+
   const trackFollowers = () => {
     const followData = {
       following: `${userData.username}`,
       follower: `${user.username}`,
     };
 
-    if (subscribeButtonText === 'Subscribe') {
-      setSubscribeButtonText('Unsubscribe');
+    if (subscribeButtonText === 'Follow') {
+      setSubscribeButtonText('Unfollow');
       axios({
         method: 'POST',
         url: `${process.env.REACT_APP_SERVER_URL}/user/follow`,
@@ -91,7 +142,7 @@ const PublicInfo = (props) => {
           console.log(error);
         });
     } else {
-      setSubscribeButtonText('Subscribe');
+      setSubscribeButtonText('Follow');
       axios({
         method: 'POST',
         url: `${process.env.REACT_APP_SERVER_URL}/user/unfollow`,
@@ -119,7 +170,7 @@ const PublicInfo = (props) => {
       setUserData(value.data);
       for (let i = 0; i < value.data.follower_count.length; i++) {
         if (user ? value.data.follower_count[i] === user.username : false) {
-          setSubscribeButtonText('Unsubscribe');
+          setSubscribeButtonText('Unfollow');
           break;
         }
       }
@@ -152,10 +203,8 @@ const PublicInfo = (props) => {
   useEffect(() => {
     get_User();
     fetchData();
-    let value = JSON.parse(window.localStorage.getItem('user'));
-    console.log(userData);
-    console.log(user);
-    if (user ? value.username === props.stream_id : false) {
+
+    if (user ? user.username === props.stream_id : false) {
       setPrivate(true);
     } else {
       setPrivate(false);
@@ -243,6 +292,9 @@ const PublicInfo = (props) => {
     //const details = await carol2.details();
     //console.log(details.cfa.flows.outFlows[0]);
   };
+  const handleLogin = ()=>{
+    loadWeb3Modal();
+  }
   return (
     <div className="">
       <div
@@ -275,23 +327,23 @@ const PublicInfo = (props) => {
                     {user && userData ? (
                       <>
                         {' '}
-                        <div className="flex   text-black text-sm font-medium   px-4  py-3">
+                        <div className="flex   text-black text-sm font-medium   md:px-4  md:py-3 px-1 py-2">
                           <Link to={`/profile/${userData.username}/`} className="mr-4">
                             <img
                               src={userData.profile_image ? userData.profile_image : person}
                               alt=""
-                              className="  w-16 h-14    rounded-full    self-start"
+                              className="  md:w-16 md:h-14 h-8 w-10    rounded-full    self-start"
                             />
                           </Link>
-                          <div className="w-full flex  justify-between mt-2">
+                          <div className="w-full  flex  justify-between   md:mt-2 ">
                             <div>
                               <div className="w-full self-center  ">
                                 <Link
                                   to={`/profile/${userData.username}/`}
-                                  className="2xl:text-sm lg:text-xs text-sm text-gray-500  mb-2"
+                                  className="2xl:text-sm lg:text-xs text-xs text-gray-500  mb-2"
                                 >
                                   <div className="flex align-middle">
-                                    <h3 className="text-white mr-1 text-lg tracking-wider">
+                                    <h3 className="text-white mr-1 md:text-lg text-sm tracking-wider">
                                       {userData.name}
                                     </h3>
 
@@ -332,11 +384,13 @@ const PublicInfo = (props) => {
                           </div>
                         </div>
                         <div className="flex items-center   w-full">
-                          {subscribeButtonText === 'Subscribe' ? (
+                          {subscribeButtonText === 'Follow' ? (
                             <button
                               id="subscribeButton"
                               className="flex items-center dark:bg-dbeats-dark-primary border border-dbeats-light dark:hover:bg-dbeats-light p-1 2xl:text-lg lg:text-sm text-md rounded-sm 2xl:px-4 px-4 lg:px-2 mr-3 font-semibold text-white "
-                              onClick={trackFollowers}
+                              onClick={
+                                user != null && trackFollowers 
+                              }
                             >
                               <span>{subscribeButtonText}</span>
                               {/* <div
@@ -347,7 +401,11 @@ const PublicInfo = (props) => {
                           ) : null}
 
                           <button
-                            onClick={handleShowSubscriptionModal}
+                            onClick={
+                              user != null
+                                && handleShowSubscriptionModal
+                                
+                            }
                             className={
                               userData.superfan_data
                                 ? ' flex dark:bg-dbeats-dark-primary border border-dbeats-light dark:hover:bg-dbeats-light p-1 2xl:text-lg lg:text-sm text-md  rounded-sm 2xl:px-4 px-4 lg:px-2      mr-3 font-semibold text-white   '
@@ -359,37 +417,37 @@ const PublicInfo = (props) => {
                                 userData.superfan_data ? '' : 'hidden'
                               } whitespace-nowrap flex`}
                             >
-                              Become a Superfan
+                              🥳 Become a Superfan
                             </span>
                           </button>
                         </div>
                       </>
                     ) : (
-                      <Link
-                        to="/signup"
+                      <a
+                        onClick={handleLogin}
                         className="bg-dbeats-light flex w-max  p-1 2xl:text-lg lg:text-sm text-md  rounded-sm 2xl:px-4 px-4 lg:px-2 mr-3 font-semibold text-white "
                       >
                         <span className="whitespace-nowrap flex">
-                          Login to Subscribe & Become a SuperFan
+                          Login to Follow & Become a SuperFan
                         </span>
-                      </Link>
+                      </a>
                     )}
                   </div>
                 ) : null}
               </div>
-              <div className="2xl:text-2xl lg:text-md 2xl:py-4 lg:py-2 py-2 flex justify-around dark:text-dbeats-white">
-                <p className={`text-white text-lg text-center pr-2 flex flex-col`}>
+              <div className="2xl:text-2xl lg:text-md text-xs 2xl:py-4 lg:py-2 py-2 flex justify-around dark:text-dbeats-white -ml-24 md:-ml-0">
+                <p className={`text-white md:text-lg text-xs text-center pr-2 flex flex-col`}>
                   <span className={`text-${viewColor}  ${viewAnimate} font-bold`}>
                     {livestreamViews}
                   </span>
                   viewers
                 </p>
-                <div className="  text-center lg:mx-3">
+                <div className="  text-center lg:mx-3 mx-1">
                   <button className="border-0 bg-transparent" onClick={handleShow}>
                     <i className="fas fa-share-alt opacity-50 mx-2"></i>
                   </button>
                   <br />
-                  <p className="2xl:text-base  text-base lg:text-sm"> SHARE</p>
+                  <p className="2xl:text-base  text-xs lg:text-sm"> SHARE</p>
                 </div>
 
                 <Menu as="div" className="relative inline-block text-left">
@@ -408,11 +466,21 @@ const PublicInfo = (props) => {
                     leaveTo="transform opacity-0 scale-95"
                   >
                     <Menu.Items className="   absolute right-0 w-56  origin-top-right bg-white dark:bg-dbeats-dark-primary dark:text-gray-50 divide-y divide-gray-100   shadow   focus:outline-none">
-                      <div className="px-1 py-1 ">
-                        <Menu.Item className="w-full text-gray-700 dark:text-gray-50 text-left text-lg pl-2 hover:text-white hover:bg-dbeats-light">
-                          <button>Report</button>
-                        </Menu.Item>
-                      </div>
+                      {user && user.username != userData.username ? (
+                        <div className="px-1 py-1 ">
+                          <Menu.Item className="w-full text-gray-700 dark:text-gray-50 text-left text-lg pl-2 hover:text-white hover:bg-dbeats-light">
+                            <button
+                              onClick={() => {
+                                handleReportShow();
+                              }}
+                            >
+                              Report
+                            </button>
+                          </Menu.Item>
+                        </div>
+                      ) : (
+                        <></>
+                      )}
                     </Menu.Items>
                   </Transition>
                 </Menu>
@@ -424,6 +492,400 @@ const PublicInfo = (props) => {
           {userData.username && <LiveChat userp={userData} privateUser={user}></LiveChat>}
         </div>
       </div>
+
+      <Modal
+        isOpen={showReport}
+        className="h-max lg:w-1/3  w-5/6  mx-auto lg:mt-60 mt-32 rounded-lg"
+      >
+        <div className={`${darkMode && 'dark'} border rounded-lg`}>
+          <Container className="2xl:px-5 px-5 lg:px-1 pb-4 dark:bg-dbeats-dark-alt rounded-lg">
+            <Row>
+              <h2 className="flex justify-between w-full 2xl:text-2xl lg:text-md py-4 2xl:py-4 lg:py-2  pt-7  text-center relative  ">
+                <div className="col-span-5 ml-60 text-gray-900 dark:text-gray-100 font-bold">
+                  Report
+                </div>
+                <div
+                  className="rounded-3xl group w-max   p-2  mx-1 mr-8 justify-center  cursor-pointer bg-gradient-to-br from-dbeats-dark-alt to-dbeats-dark-primary  nm-flat-dbeats-dark-secondary   hover:nm-inset-dbeats-dark-primary          flex items-center   font-medium          transform-gpu  transition-all duration-300 ease-in-out "
+                  onClick={handleReportClose}
+                >
+                  <span className="text-black dark:text-white  flex px-2 py-1 rounded-3xl bg-gradient-to-br from-dbeats-dark-secondary to-dbeats-dark-primary hover:nm-inset-dbeats-dark-secondary">
+                    <i className="fas fa-times"></i>
+                  </span>
+                </div>
+              </h2>
+            </Row>
+            <Row>
+              <div className="w-full px-3">
+                <h1 className="text-white text-xl mb-2">Why are you reporting this post?</h1>
+                <div className="w-full max-h-60 overflow-y-scroll text-white text-lg">
+                  <RadioGroup value={reportValue} onChange={setReportValue} className=" w-max">
+                    <RadioGroup.Option
+                      value="Nudity or pornography"
+                      className="p-1 cursor-pointer flex items-center"
+                    >
+                      {({ checked }) => (
+                        <>
+                          <span className={checked ? 'text-dbeats-light' : ''}>
+                            Nudity or pornography
+                          </span>
+                          {checked ? (
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-5 w-5 ml-2"
+                              viewBox="0 0 20 20"
+                              fill="#00d3ff"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                          ) : (
+                            <></>
+                          )}
+                        </>
+                      )}
+                    </RadioGroup.Option>
+                    <RadioGroup.Option
+                      className="p-1 cursor-pointer flex items-center"
+                      value="Sexual Exploitation"
+                    >
+                      {({ checked }) => (
+                        <>
+                          <span className={checked ? 'text-dbeats-light' : ''}>
+                            Sexual Exploitation
+                          </span>
+                          {checked ? (
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-5 w-5 ml-2"
+                              viewBox="0 0 20 20"
+                              fill="#00d3ff"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                          ) : (
+                            <></>
+                          )}
+                        </>
+                      )}
+                    </RadioGroup.Option>
+                    <RadioGroup.Option
+                      className="p-1 cursor-pointer flex items-center"
+                      value="Sharing private images"
+                    >
+                      {({ checked }) => (
+                        <>
+                          <span className={checked ? 'text-dbeats-light' : ''}>
+                            Sharing private images
+                          </span>
+                          {checked ? (
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-5 w-5 ml-2"
+                              viewBox="0 0 20 20"
+                              fill="#00d3ff"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                          ) : (
+                            <></>
+                          )}
+                        </>
+                      )}
+                    </RadioGroup.Option>
+                    <RadioGroup.Option
+                      className="p-1 cursor-pointer flex items-center"
+                      value="Violent threat"
+                    >
+                      {({ checked }) => (
+                        <>
+                          <span className={checked ? 'text-dbeats-light' : ''}>Violent threat</span>
+                          {checked ? (
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-5 w-5 ml-2"
+                              viewBox="0 0 20 20"
+                              fill="#00d3ff"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                          ) : (
+                            <></>
+                          )}
+                        </>
+                      )}
+                    </RadioGroup.Option>
+                    <RadioGroup.Option
+                      className="p-1 cursor-pointer flex items-center"
+                      value="Animal abuse"
+                    >
+                      {({ checked }) => (
+                        <span className={checked ? 'text-dbeats-light' : ''}>Animal abuse</span>
+                      )}
+                    </RadioGroup.Option>
+                    <RadioGroup.Option
+                      className="p-1 cursor-pointer flex items-center"
+                      value="Death, severe injury, dangerous"
+                    >
+                      {({ checked }) => (
+                        <>
+                          <span className={checked ? 'text-dbeats-light' : ''}>
+                            Death, severe injury, dangerous
+                          </span>
+                          {checked ? (
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-5 w-5 ml-2"
+                              viewBox="0 0 20 20"
+                              fill="#00d3ff"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                          ) : (
+                            <></>
+                          )}
+                        </>
+                      )}
+                    </RadioGroup.Option>
+                    <RadioGroup.Option
+                      className="p-1 cursor-pointer flex items-center"
+                      value="Firearms"
+                    >
+                      {({ checked }) => (
+                        <>
+                          <span className={checked ? 'text-dbeats-light' : ''}>Firearms</span>
+                          {checked ? (
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-5 w-5 ml-2"
+                              viewBox="0 0 20 20"
+                              fill="#00d3ff"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                          ) : (
+                            <></>
+                          )}
+                        </>
+                      )}
+                    </RadioGroup.Option>
+                    <RadioGroup.Option
+                      className="p-1 cursor-pointer flex items-center"
+                      value="Fake health documents"
+                    >
+                      {({ checked }) => (
+                        <>
+                          <span className={checked ? 'text-dbeats-light' : ''}>
+                            Fake health documents
+                          </span>
+                          {checked ? (
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-5 w-5 ml-2"
+                              viewBox="0 0 20 20"
+                              fill="#00d3ff"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                          ) : (
+                            <></>
+                          )}
+                        </>
+                      )}
+                    </RadioGroup.Option>
+                    <RadioGroup.Option
+                      className="p-1 cursor-pointer flex items-center"
+                      value="Report piracy"
+                    >
+                      {({ checked }) => (
+                        <>
+                          <span className={checked ? 'text-dbeats-light' : ''}>Report piracy</span>
+                          {checked ? (
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-5 w-5 ml-2"
+                              viewBox="0 0 20 20"
+                              fill="#00d3ff"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                          ) : (
+                            <></>
+                          )}
+                        </>
+                      )}
+                    </RadioGroup.Option>
+                  </RadioGroup>
+                  <button
+                    className="p-1"
+                    onClick={() => {
+                      handleOtherReportShow();
+                      handleReportClose();
+                    }}
+                  >
+                    Others
+                  </button>
+                </div>
+              </div>
+            </Row>
+            <Row>
+              <div
+                className="w-full flex justify-center items-center py-2  
+                      cursor-pointer  "
+              >
+                <button
+                  className="text-white px-5 py-3 text-lg  bg-gradient-to-br from-dbeats-dark-secondary to-dbeats-secondary-dark-primary 
+                      hover:nm-inset-dbeats-secondary-light  rounded-3xl transition-all duration-300"
+                  onClick={handleReportSubmit}
+                >
+                  Submit Report
+                </button>
+              </div>
+            </Row>
+          </Container>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={showReportSubmitThankyou}
+        className="h-max lg:w-1/3  w-5/6 mx-auto lg:mt-60 mt-32 rounded-lg"
+      >
+        <div className={`${darkMode && 'dark'}`}>
+          <Container className="2xl:px-5 px-5 lg:px-1 pb-4 dark:bg-dbeats-dark-alt rounded-lg border">
+            <Row>
+              <h2 className="flex justify-between  w-full 2xl:text-2xl lg:text-md py-4 2xl:py-4 lg:py-2  pt-7  text-center relative  ">
+                <div className="col-span-5 text-gray-900 dark:text-gray-100 font-bold">
+                  Thanks for reporting!!
+                </div>
+                <div
+                  className="rounded-3xl group w-max   p-2  mx-1  justify-center  cursor-pointer bg-gradient-to-br from-dbeats-dark-alt to-dbeats-dark-primary  nm-flat-dbeats-dark-secondary   hover:nm-inset-dbeats-dark-primary          flex items-center   font-medium          transform-gpu  transition-all duration-300 ease-in-out "
+                  onClick={handleReportThankyouClose}
+                >
+                  <span className="text-black dark:text-white  flex px-2 py-1 rounded-3xl bg-gradient-to-br from-dbeats-dark-secondary to-dbeats-dark-primary hover:nm-inset-dbeats-dark-secondary">
+                    <i className="fas fa-times"></i>
+                  </span>
+                </div>
+              </h2>
+            </Row>
+            <Row>
+              <div className="w-full flex justify-center items-center pt-5 pb-10">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-28 w-28"
+                  viewBox="0 0 20 20"
+                  fill="white"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </div>
+            </Row>
+          </Container>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={showOtherReport}
+        className="h-max lg:w-1/3  w-5/6 mx-auto lg:mt-60 mt-32 rounded-lg"
+      >
+        <div className={`${darkMode && 'dark'} border rounded-lg`}>
+          <Container className="2xl:px-5 px-5 lg:px-1 pb-4 dark:bg-dbeats-dark-alt rounded-lg">
+            <Row>
+              <h2 className="flex justify-around w-full 2xl:text-2xl lg:text-md py-4 2xl:py-6 lg:py-2  pt-7  text-center relative  ">
+                <div
+                  onClick={() => {
+                    handleOtherReportClose();
+                    handleReportShow();
+                  }}
+                  className="cursor-pointer text-gray-900 dark:text-gray-100 dark:bg-dbeats-dark-alt ml-5"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-7 w-7"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M7.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l2.293 2.293a1 1 0 010 1.414z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
+                <div className="col-span-4 text-gray-900 dark:text-gray-100 font-bold">
+                  Help us understand the problem
+                </div>
+                <div
+                  className="rounded-3xl group w-max   p-2  mx-1 justify-center  cursor-pointer bg-gradient-to-br from-dbeats-dark-alt to-dbeats-dark-primary  nm-flat-dbeats-dark-secondary   hover:nm-inset-dbeats-dark-primary          flex items-center   font-medium          transform-gpu  transition-all duration-300 ease-in-out "
+                  onClick={handleOtherReportClose}
+                >
+                  <span className="text-black dark:text-white  flex px-2 py-1 rounded-3xl bg-gradient-to-br from-dbeats-dark-secondary to-dbeats-dark-primary hover:nm-inset-dbeats-dark-secondary">
+                    <i className="fas fa-times"></i>
+                  </span>
+                </div>
+              </h2>
+            </Row>
+            <Row>
+              <div className="w-full h-max px-2">
+                <textarea
+                  className="w-full text-white text-lg h-48 rounded-sm p-2  border dark:bg-dbeats-dark-primary"
+                  placeholder="Issue..."
+                  required
+                  onChange={handleInputChange}
+                />
+              </div>
+            </Row>
+            <Row>
+              <div
+                className="w-full flex justify-center items-center py-2  
+                      cursor-pointer  "
+              >
+                <button
+                  className="text-white px-5 py-3 text-lg  bg-gradient-to-br from-dbeats-dark-secondary to-dbeats-secondary-dark-primary 
+                      hover:nm-inset-dbeats-secondary-light  rounded-3xl transition-all duration-300"
+                  onClick={handleReportSubmit}
+                >
+                  Submit Report
+                </button>
+              </div>
+            </Row>
+          </Container>
+        </div>
+      </Modal>
+
       <ShareModal
         show={show}
         handleClose={handleClose}

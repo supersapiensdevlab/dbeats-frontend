@@ -1,12 +1,13 @@
 import axios from 'axios';
 import React, { useState } from 'react';
 import Modal from 'react-modal';
-
+import { useDispatch } from 'react-redux';
+import {loadUser} from '../../../actions/userActions';
 const ProfileUpdateModal = ({ show, handleClose, userData, darkMode, setDisplayName }) => {
   const [buttonText, setButtonText] = useState('Click Here');
   const [loader, setLoader] = useState(false);
   const [existingValue, setExistingValue] = useState(null);
-
+  const dispatch = useDispatch();
   const [newData, setNewData] = useState({
     name: userData.name,
     email: userData.email,
@@ -51,13 +52,14 @@ const ProfileUpdateModal = ({ show, handleClose, userData, darkMode, setDisplayN
       data: data,
       headers: {
         'content-type': 'application/json',
-        'auth-token':localStorage.getItem('authtoken')
+        'auth-token': localStorage.getItem('authtoken'),
       },
     })
       .then((res) => {
         if (res.data === 'Invalid') {
           setExistingValue(res.data);
         } else {
+          dispatch(loadUser());
           if (userData.name !== newData.name) {
             setDisplayName(newData.name);
           }
@@ -71,12 +73,13 @@ const ProfileUpdateModal = ({ show, handleClose, userData, darkMode, setDisplayN
   };
 
   return (
+    <div className='relative'>
     <Modal
       isOpen={show}
       className={
         darkMode
-          ? 'h-max lg:w-1/3 w-5/6 mx-auto 2xl:mt-32 lg:mt-16 mt-20 bg-dbeats-dark-alt rounded-xl'
-          : 'h-max lg:w-1/3 w-5/6 mx-auto 2xl:mt-32 lg:mt-16 mt-20 bg-gray-50 rounded-xl shadow-2xl'
+          ? 'h-max lg:w-1/3 w-5/6 mx-auto absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-dbeats-dark-alt rounded-xl'
+          : 'h-max lg:w-1/3 w-5/6 mx-auto absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-gray-50 rounded-xl shadow-2xl'
       }
     >
       <div className={`${darkMode && 'dark'} p-2 h-max`}>
@@ -218,6 +221,7 @@ const ProfileUpdateModal = ({ show, handleClose, userData, darkMode, setDisplayN
         </div>
       </div>
     </Modal>
+    </div>
   );
 };
 

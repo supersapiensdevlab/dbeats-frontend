@@ -9,10 +9,12 @@ import ReactAudioPlayer from 'react-audio-player';
 import LoadingBar from 'react-top-loading-bar';
 import ChatLinkPreview from './ChatLinkPreview';
 import InfiniteScroll from 'react-infinite-scroller';
+import { useDispatch, useSelector } from 'react-redux';
 
 function ChatRoom(props) {
   // to get loggedin user from   localstorage
-  const user = JSON.parse(window.localStorage.getItem('user'));
+  const dispatch = useDispatch();
+  const user = useSelector((state) => state.User.user);
 
   const chatRef = useRef(null);
   const loadingRef = useRef(null);
@@ -73,7 +75,7 @@ function ChatRoom(props) {
     if (user) {
       loadingRef.current.continuousStart();
       // https://dbeats-chat.herokuapp.com
-      const socket = io('https://dbeats-chat.herokuapp.com');
+      const socket = io(process.env.REACT_APP_CHAT_URL);
       setCurrentSocket(socket);
       socket.emit('joinroom', { user_id: user._id, room_id: props.userp._id });
       socket.on('init', (msgs) => {
@@ -103,7 +105,7 @@ function ChatRoom(props) {
       window.history.replaceState({}, 'Home', '/');
     }
     return () => {
-      currentSocket.disconnect();
+      if (currentSocket) currentSocket.disconnect();
     };
     // eslint-disable-next-line
   }, []);

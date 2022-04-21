@@ -7,14 +7,17 @@ import {
   UploadNFTModal,
   UploadTrackModal,
   UploadVideoModal,
-  PictureModal,
 } from '../Modals/NavbarModals';
+
+import useWeb3Modal from '../../hooks/useWeb3Modal';
+import { useSelector } from 'react-redux';
 
 const MainToolbar = () => {
   //Popup
   const [showAnnouncement, setShowAnnouncement] = useState(false);
   const handleCloseAnnouncement = () => setShowAnnouncement(false);
   const handleShowAnnouncement = () => setShowAnnouncement(true);
+  const [provider, loadWeb3Modal, logoutOfWeb3Modal] = useWeb3Modal();
 
   const [showVideoUpload, setShowVideoUpload] = useState(false);
   const handleCloseVideoUpload = () => setShowVideoUpload(false);
@@ -34,7 +37,7 @@ const MainToolbar = () => {
 
   //Loader
   const [loader, setLoader] = useState(true);
-  const user = JSON.parse(window.localStorage.getItem('user'));
+  const user = useSelector((state) => state.User.user);
   const [iceBreaker, setIceBreaker] = useState(['Hello World!']);
 
   const questions = [
@@ -142,7 +145,7 @@ const MainToolbar = () => {
               </div>
             </div>
 
-            <div
+            {/* <div
               onClick={() => {
                 handleShowPictureModal();
                 handleCloseVideoUpload();
@@ -150,7 +153,7 @@ const MainToolbar = () => {
                 handleCloseAnnouncement();
                 handleCloseNFTUpload();
               }}
-              className="hidden rounded-3xl group w-max  p-0.5  mx-1 justify-center  cursor-pointer bg-gradient-to-br from-dbeats-dark-alt to-dbeats-dark-secondary      hover:nm-inset-dbeats-dark-primary          flex items-center   font-medium          transform-gpu  transition-all duration-300 ease-in-out "
+              className=" rounded-3xl group w-max  p-0.5  mx-1 justify-center  cursor-pointer bg-gradient-to-br from-dbeats-dark-alt to-dbeats-dark-secondary      hover:nm-inset-dbeats-dark-primary          flex items-center   font-medium          transform-gpu  transition-all duration-300 ease-in-out "
             >
               <div className="  h-full w-full text-black dark:text-white p-1 flex  rounded-3xl bg-gradient-to-br from-dbeats-dark-secondary to-dbeats-dark-primary hover:nm-inset-dbeats-dark-secondary ">
                 <i className="fas fa-stroopwafel self-center mx-2 text-white opacity-70 group-hover:opacity-100"></i>
@@ -158,7 +161,7 @@ const MainToolbar = () => {
                   Photo
                 </p>
               </div>
-            </div>
+            </div> */}
           </div>
         </div>
       </div>
@@ -191,14 +194,6 @@ const MainToolbar = () => {
         setShowNFTUpload={setShowNFTUpload}
         handleCloseNFTUpload={handleCloseNFTUpload}
         handleShowNFTUpload={handleShowNFTUpload}
-        loader={loader}
-        setLoader={setLoader}
-      />{' '}
-      <PictureModal
-        showPictureModal={showPictureModal}
-        setShowPictureModal={setShowPictureModal}
-        handleClosePictureModal={handleClosePictureModal}
-        handleShowPictureModal={handleShowPictureModal}
         loader={loader}
         setLoader={setLoader}
       />{' '}
