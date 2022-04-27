@@ -137,7 +137,7 @@ const NFTCard = ({ nft, buyNft }) => {
         });
       }
     }
-    if(contentData){
+    if (contentData) {
       if (contentData.disableComments) {
         setCommentDisabled(true);
       }
@@ -685,7 +685,9 @@ const NFTCard = ({ nft, buyNft }) => {
                           >
                             {contentData.comments ? contentData.comments.length : 0} comments
                           </div>
-                        ):<></>}
+                        ) : (
+                          <></>
+                        )}
                       </div>
                     </div>
                   ) : (
@@ -722,27 +724,31 @@ const NFTCard = ({ nft, buyNft }) => {
                           >
                             {contentData.comments ? contentData.comments.length : 0} comments
                           </div>
-                        ):<></>}
+                        ) : (
+                          <></>
+                        )}
                       </div>
                     </div>
                   )}
                 </div>
                 <div className="flex ">
                   {listingPrice ? (
-                    <div
-                      onClick={() => createMarketSale(nft)}
-                      className=" rounded-3xl group w-max ml-2 p-1  mx-1 justify-center  cursor-pointer bg-gradient-to-br from-dbeats-dark-alt to-dbeats-dark-primary  nm-flat-dbeats-dark-primary   hover:nm-inset-dbeats-dark-primary          flex items-center   font-medium          transform-gpu  transition-all duration-300 ease-in-out "
-                    >
-                      <span className="  text-black dark:text-white  flex p-1 rounded-3xl bg-gradient-to-br from-dbeats-dark-secondary to-dbeats-dark-secondary hover:nm-inset-dbeats-dark-secondary ">
-                        <img
-                          className="h-7 w-7 p-1  mr-1   text-white self-center align-middle items-center     "
-                          src={maticLogo}
-                          alt="logo"
-                        ></img>
-                        <p className="self-center mr-2 ml-1">
-                          {parseFloat(nft.price) > 0 ? nft.price : `Make an offer`}
-                        </p>
-                      </span>
+                    <div>
+                      <div
+                        onClick={() => createMarketSale(nft)}
+                        className=" rounded-3xl group w-max ml-2 p-1  mx-1 justify-center  cursor-pointer bg-gradient-to-br from-dbeats-dark-alt to-dbeats-dark-primary  nm-flat-dbeats-dark-primary   hover:nm-inset-dbeats-dark-primary          flex items-center   font-medium          transform-gpu  transition-all duration-300 ease-in-out "
+                      >
+                        <span className="  text-black dark:text-white  flex p-1 rounded-3xl bg-gradient-to-br from-dbeats-dark-secondary to-dbeats-dark-secondary hover:nm-inset-dbeats-dark-secondary ">
+                          <img
+                            className="h-7 w-7 p-1  mr-1   text-white self-center align-middle items-center     "
+                            src={maticLogo}
+                            alt="logo"
+                          ></img>
+                          <p className="self-center mr-2 ml-1">
+                            {parseFloat(nft.price) > 0 ? nft.price : `Make an offer`}
+                          </p>
+                        </span>
+                      </div>
                     </div>
                   ) : (
                     <div
@@ -819,7 +825,7 @@ const NFTCard = ({ nft, buyNft }) => {
             )}
             {showAllComments && !commentDisabled && (
               <Allcomments
-                myComments={myComments}
+              myComments={myComments}
                 user_id={cardDetails.user._id}
                 contentData={contentData}
                 setShowAllComments={setShowAllComments}
@@ -1164,7 +1170,7 @@ const NFTCard = ({ nft, buyNft }) => {
               </h2>
             </Row>
             <Row>
-              <div className="w-full pt-5 pb-10">
+              <div className="w-full pt-5 pb-10 px-20">
                 <div className="text-center">
                   <i className="fa-regular fa-circle-check text-white text-5xl text-center"></i>
                 </div>
