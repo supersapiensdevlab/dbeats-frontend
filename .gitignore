@@ -17,7 +17,22 @@
 .env.development.local
 .env.test.local
 .env.production.local
+.secret
 
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+package-lock.json
+yarn.lock
+
+
+node_modules
+env
+.env
+coverage
+coverage.json
+typechain
+
+#Hardhat files
+cache
